@@ -1,0 +1,39 @@
+@import url('reset.css');
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400&display=swap');
+
+:root {
+  --vspacing: 1rem;
+}
+
+body {
+  color: black;
+  background-color: white;
+
+  font-family: 'Source Sans Pro', sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 2;
+
+  padding: 1rem;
+}
+
+h1 { font-size: 3.0518rem; }
+h2 { font-size: 2.4414rem; }
+h3 { font-size: 1.9531rem; }
+h4 { font-size: 1.5625rem; }
+h5 { font-size: 1.2500rem; }
+h6 { font-size: 1.0000rem; }
+
+h2, h3, h4, h5, h6 {
+  /* Top padding proportional to heading font size. */
+  padding-top: 0.5em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  /* Use a light font. */
+  font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 300;
+
+  /* Reduce line height, since there is already padding. */
+  line-height: 1;
+}
