@@ -1,0 +1,44 @@
+@import('https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css');
+
+.collapse-toggle-button > :first-child::after {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  content: '\f068';
+}
+
+.collapse-toggle-button.collapsed > :first-child::after {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 900;
+  content: '\f067';
+}
+
+.collapse-toggle-anchor, .collapse-toggle-anchor:hover {
+  color: inherit;
+}
+
+.yapp-location::before, .yapp-time::before {
+  font-family: 'Font Awesome 5 Free';
+  font-weight: 400;
+  display: inline-block;
+  width: 1.5em;
+  text-align: center;
+}
+
+.yapp-location::before {
+  font-weight: 900;
+  content: '\f3c5';
+}
+
+.yapp-time::before {
+  content: '\f017';
+}
+
+.yapp-event-about > * {
+  margin-bottom: 0;
+}
+
+.yapp-track-color-bar {
+  background-color: var(--yapp-track-color);
+  width: 0.5rem;
+  border-radius: 0.25rem;
+}
