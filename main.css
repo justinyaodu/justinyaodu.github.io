@@ -21,6 +21,10 @@ body {
 
 /* Page styles. */
 
+* {
+  overflow-wrap: break-word;
+}
+
 :root {
   font-family: 'Source Sans Pro', sans-serif;
   font-size: 1.25rem;
@@ -30,6 +34,12 @@ body {
 body {
   padding: 2rem;
   max-width: 50rem;
+}
+
+@media screen and (max-width: 480px) {
+  body {
+    padding: 1rem;
+  }
 }
 
 body > * + * {
