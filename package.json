@@ -1,0 +1,31 @@
+{
+  "name": "justinyaodu.github.io",
+  "type": "module",
+  "scripts": {
+    "build": "rm -rf public/ && mkdir public/ && cp -a assets/ public/assets && mkdir -p public/assets/katex/fonts && cp -a node_modules/katex/dist/katex.min.css node_modules/katex/dist/fonts public/assets/katex && tsx src/build-website.ts",
+    "dev": "concurrently \"npm run build\" \"chokidar \\\"assets\\\" \\\"layouts\\\" \\\"pages\\\" \\\"src\\\" -c \\\"npm run build\\\"\" \"npx http-server public/ -c-1\"",
+    "lint-fix": "eslint --fix --cache --report-unused-disable-directives .; prettier --write ."
+  },
+  "dependencies": {
+    "@types/commonmark": "^0.27.7",
+    "@types/jsdom": "^21.1.3",
+    "@types/katex": "^0.16.3",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0",
+    "chokidar-cli": "^3.0.0",
+    "commonmark": "^0.30.0",
+    "concurrently": "^8.2.1",
+    "eslint": "^8.49.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-import-resolver-typescript": "^3.6.0",
+    "eslint-plugin-import": "^2.28.1",
+    "github-slugger": "^2.0.0",
+    "http-server": "^14.1.1",
+    "jsdom": "^22.1.0",
+    "katex": "^0.16.8",
+    "prettier": "^3.0.3",
+    "shiki": "^0.14.4",
+    "tsx": "^3.12.10",
+    "typescript": "^5.2.2"
+  }
+}
