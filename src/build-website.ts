@@ -9,6 +9,7 @@ import { markdownToHTML } from "./markdown.js";
 import { logError, exit } from "./script.js";
 
 interface Page {
+  title: string;
   inputFilePath: string | null;
   outputFilePath: string;
   path: string;
@@ -16,6 +17,28 @@ interface Page {
 }
 
 type Pass = (pages: Page[]) => Page[] | Promise<Page[]>;
+
+const getTitleFromH1: Pass = (pages) =>
+  pages.map((page) => {
+    let title = page.dom.window.document.querySelector("h1")?.textContent;
+    if (title == null) {
+      logError("Page has no h1; cannot get title:", {
+        page: page.inputFilePath,
+      });
+      title = "Untitled page";
+    }
+    return { ...page, title };
+  });
+
+const setTitle: Pass = (pages) => {
+  for (const page of pages) {
+    const document = page.dom.window.document;
+    const title = document.createElement("title");
+    title.textContent = page.title;
+    page.dom.window.document.head.appendChild(title);
+  }
+  return pages;
+};
 
 const renderDisplayMath: Pass = (pages) => {
   for (const page of pages) {
@@ -224,6 +247,8 @@ const passes: Pass[] = [
   convertMarkdownLinks,
   applyPageLayout,
   highlightCode,
+  getTitleFromH1,
+  setTitle,
 ];
 
 function convertInputFilePath(inputFilePath: string): {
@@ -243,7 +268,7 @@ async function main() {
     const rawHTML = markdownToHTML(readFile(inputFilePath));
     const dom = new JSDOM(rawHTML);
 
-    return { path, inputFilePath, outputFilePath, dom };
+    return { title: "", path, inputFilePath, outputFilePath, dom };
   });
 
   for (const pass of passes) {
