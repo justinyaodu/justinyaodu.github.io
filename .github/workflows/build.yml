@@ -19,10 +19,10 @@ jobs:
       - name: Push to gh-pages
         working-directory: ./public
         run: |
-          git init -b gh-pages
+          cp -a ../.git .
+          git checkout --orphan gh-pages
           git config user.name "GitHub Actions"
           git config user.email "${USER}@${HOSTNAME}"
           git add .
           git commit -m "Rebuild website: $(TZ=UTC0 date +'%Y-%m-%dT%H:%M:%SZ')"
-          git remote add origin $(cd .. && git remote get-url origin)
           git push -uf origin gh-pages
