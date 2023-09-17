@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - main
+permissions:
+  contents: write
 jobs:
   build:
     name: Build static site and push to gh-pages
@@ -19,6 +21,6 @@ jobs:
         run: |
           git init -b gh-pages
           git add .
-          git commit -m "Rebuild website: $(TZ=UTC0 date +'%Y-%m-%dT%H:%M:%SZ')"
+          git commit --author "GitHub Actions <>" -m "Rebuild website: $(TZ=UTC0 date +'%Y-%m-%dT%H:%M:%SZ')"
           git remote add origin $(cd .. && git remote get-url origin)
           git push -uf origin gh-pages
