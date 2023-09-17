@@ -1,0 +1,25 @@
+name: Build static site and push to gh-pages
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    name: Build static site and push to gh-pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+      - name: Build static site
+        run: |
+          npm ci
+          npm run build
+      - name: Push to gh-pages
+        working-directory: ./public
+        run: |
+          cp -a ../
+          git init -b gh-pages
+          git add .
+          git commit -m "Rebuild website: $(TZ=UTC0 date +'%Y-%m-%dT%H:%M:%SZ')"
+          git remote add origin $(cd .. && git remote get-url origin)
+          git push -uf origin gh-pages

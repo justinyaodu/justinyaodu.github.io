@@ -257,7 +257,12 @@ function convertInputFilePath(inputFilePath: string): {
 } {
   let path = inputFilePath.replace(/^[/]pages/, "").replace(/\.md$/, "");
   const outputFilePath = "/public" + path + ".html";
+
   path = path.replace(/[/]index$/, "");
+  if (path === "") {
+    path = "/";
+  }
+
   return { path, outputFilePath };
 }
 
