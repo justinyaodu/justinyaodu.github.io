@@ -26,7 +26,8 @@ em {
 }
 
 @mixin drop-shadow($factor) {
-  filter: drop-shadow((1px * $factor) (1px * $factor) (2px * $factor) rgba(0, 0, 0, 0.25))
+  box-shadow: (1px * $factor) (1px * $factor) (2px * $factor)
+    rgba(0, 0, 0, 0.25);
 }
 
 $main-max-width-factor: 42;
@@ -83,13 +84,16 @@ $main-max-width-factor: 42;
       }
     }
 
-    ul, ol, li {
+    ul,
+    ol,
+    li {
       & > * + * {
         margin-top: 0.5 * $unit;
       }
     }
 
-    ul, ol {
+    ul,
+    ol {
       & > li {
         margin-left: $unit;
       }
@@ -111,7 +115,12 @@ $main-max-width-factor: 42;
       }
     }
 
-    h1, h2, h3, h4, h5, h6 {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
       line-height: 1.25;
       font-weight: 300;
 
@@ -120,7 +129,11 @@ $main-max-width-factor: 42;
       }
     }
 
-    h2, h3, h4, h5, h6 {
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
       padding-top: 0.5em;
     }
 
