@@ -25,11 +25,6 @@ em {
   font-style: italic;
 }
 
-@mixin drop-shadow($factor) {
-  box-shadow: (1px * $factor) (1px * $factor) (2px * $factor)
-    rgba(0, 0, 0, 0.25);
-}
-
 $main-max-width-factor: 42;
 
 @mixin scaled-styles($unit) {
@@ -164,16 +159,17 @@ $main-max-width-factor: 42;
     $code-background: #fdf6e3;
 
     code {
+      box-shadow: 1px 1px 3px #0003;
       border-radius: 0.5em;
       margin: -0.125em 0;
       padding: 0.125em 0.25em;
       background: $code-background;
       font-family: "Source Code Pro", monospace;
       font-weight: 500;
-      @include drop-shadow(0.5);
     }
 
     pre {
+      box-shadow: 2px 2px 6px #0003;
       background: $code-background;
       border-radius: 1.5 * $unit;
       margin-left: -1 * $main-padding;
@@ -182,7 +178,6 @@ $main-max-width-factor: 42;
       font-size: 0.8em;
       line-height: 1.5;
       overflow-x: auto;
-      @include drop-shadow(1);
     }
 
     @media (max-width: $main-max-width) {
@@ -197,7 +192,7 @@ $main-max-width-factor: 42;
       padding: 0;
       background: none;
       font-weight: 600;
-      filter: none;
+      box-shadow: none;
     }
   }
 }
