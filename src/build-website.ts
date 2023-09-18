@@ -2,11 +2,12 @@ import GithubSlugger from "github-slugger";
 import { JSDOM } from "jsdom";
 import katex from "katex";
 import prettier from "prettier";
+import * as sass from "sass";
 import { getHighlighter } from "shiki";
 
 import { findFiles, readFile, writeFile } from "./filesystem.js";
 import { markdownToHTML } from "./markdown.js";
-import { logError, exit } from "./script.js";
+import { logError, runMain } from "./script.js";
 
 interface Page {
   title: string;
@@ -266,6 +267,11 @@ function convertInputFilePath(inputFilePath: string): {
   return { path, outputFilePath };
 }
 
+function compileSass() {
+  const result = sass.compileString(readFile("/styles/main.scss"));
+  writeFile("/public/assets/styles/main.css", result.css);
+}
+
 async function main() {
   let pages: Page[] = findFiles("/pages").map((inputFilePath) => {
     const { path, outputFilePath } = convertInputFilePath(inputFilePath);
@@ -285,11 +291,13 @@ async function main() {
       const unformattedHTML = page.dom.serialize();
       const formattedHTML = await prettier.format(unformattedHTML, {
         parser: "html",
+        tabWidth: 0,
       });
       writeFile(page.outputFilePath, formattedHTML);
     }),
   );
+
+  compileSass();
 }
 
-await main().catch(logError);
-exit();
+await runMain(main);

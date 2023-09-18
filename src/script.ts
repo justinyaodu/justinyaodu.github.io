@@ -7,8 +7,9 @@ function logError(...data: unknown[]) {
   console.error("[ERROR]", ...data);
 }
 
-function exit() {
+async function runMain(main: () => Promise<void>) {
+  await main().catch(logError);
   process.exit(errorOccurred ? 1 : 0);
 }
 
-export { logError, exit };
+export { logError, runMain };
