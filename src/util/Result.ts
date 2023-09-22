@@ -18,7 +18,7 @@ const Result = {
     } catch (e) {
       return Result.err(e);
     }
-  }
+  },
 };
 
 export { Result };

@@ -1,13 +1,16 @@
 import { compileString } from "sass";
 
-import { PureTarget, Target } from "./Target.js";
+import { PureTarget, Target, type TargetBuildArgs } from "./Target.js";
 
-class SassTarget extends PureTarget<{ source: string }, string> {
-  constructor(source: Target<any, string>) {
+type SassTargetInputs = { source: string };
+class SassTarget extends PureTarget<SassTargetInputs, string> {
+  constructor(source: Target<never, string>) {
     super(`Sass@${source.key}`, { source });
   }
 
-  override async build({ source }: { source: string }): Promise<string> {
+  override async build({
+    inputs: { source },
+  }: TargetBuildArgs<SassTargetInputs>): Promise<string> {
     return compileString(source).css;
   }
 }

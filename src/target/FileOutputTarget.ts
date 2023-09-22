@@ -1,11 +1,10 @@
 import { deleteFileSync, writeFile } from "../filesystem.js";
 
-import { Target } from "./Target.js";
+import { Target, type TargetBuildArgs } from "./Target.js";
 
-class FileOutputTarget extends Target<{ data: Buffer | string }, number> {
+type FileOutputTargetInputs = { data: Buffer | string };
+class FileOutputTarget extends Target<FileOutputTargetInputs, undefined> {
   static instancesByPath: Map<string, FileOutputTarget> = new Map();
-
-  private counter: number = 0;
 
   constructor(
     public projectPath: string,
@@ -21,9 +20,10 @@ class FileOutputTarget extends Target<{ data: Buffer | string }, number> {
     FileOutputTarget.instancesByPath.set(projectPath, this);
   }
 
-  override async build({ data }: { data: string }): Promise<number> {
+  override async build({
+    inputs: { data },
+  }: TargetBuildArgs<FileOutputTargetInputs>): Promise<undefined> {
     await writeFile(this.projectPath, data);
-    return this.counter++;
   }
 
   protected override onStale(): void {

@@ -7,6 +7,7 @@ import { AsyncBatcher } from "./util/AsyncBatcher.js";
 import { AsyncQueue } from "./util/AsyncQueue.js";
 
 const PROJECT_ROOT = path.resolve();
+const WRITABLE_PATH_PREFIXES = ["/public/", "/public-preview/"];
 
 function absolutePathToProjectPath(absolutePath: string): string {
   return "/" + path.relative(PROJECT_ROOT, absolutePath);
@@ -36,10 +37,7 @@ function findFilesRecursively(absoluteDirectoryPath: string): string[] {
   return absolutePaths;
 }
 
-function resolveProjectPath(
-  projectPath: string,
-  additionalPrefix: string = "",
-) {
+function resolveProjectPath(projectPath: string, forWrite = false) {
   if (!projectPath.startsWith("/")) {
     const message = [
       "Project path does not start with /:",
@@ -49,13 +47,15 @@ function resolveProjectPath(
   }
   const resolved = path.resolve(PROJECT_ROOT, projectPath.substring(1));
 
-  const allowedPathPrefix = PROJECT_ROOT + additionalPrefix;
-  if (!resolved.startsWith(allowedPathPrefix)) {
+  if (
+    forWrite &&
+    !WRITABLE_PATH_PREFIXES.some((p) => resolved.startsWith(PROJECT_ROOT + p))
+  ) {
     const message = [
       "Cannot access path",
-      JSON.stringify(resolved),
-      "because it does not start with",
-      JSON.stringify(allowedPathPrefix),
+      JSON.stringify(projectPath),
+      "because it does not start with one of the writable path prefixes:",
+      JSON.stringify(WRITABLE_PATH_PREFIXES),
     ].join(" ");
     throw new Error(message);
   }
@@ -63,8 +63,18 @@ function resolveProjectPath(
   return resolved;
 }
 
+async function copyFile(
+  srcProjectPath: string,
+  destProjectPath: string,
+): Promise<void> {
+  const srcAbsolutePath = resolveProjectPath(srcProjectPath);
+  const destAbsolutePath = resolveProjectPath(destProjectPath, true);
+  await fs.promises.mkdir(path.dirname(destAbsolutePath), { recursive: true });
+  await fs.promises.copyFile(srcAbsolutePath, destAbsolutePath);
+}
+
 function deleteFileSync(projectPath: string): void {
-  const absolutePath = resolveProjectPath(projectPath, "/public");
+  const absolutePath = resolveProjectPath(projectPath, true);
   if (stat(projectPath)?.isFile) {
     fs.unlinkSync(absolutePath);
   }
@@ -80,8 +90,11 @@ async function readTextFile(projectPath: string): Promise<string> {
   return await fs.promises.readFile(absolutePath, { encoding: "utf-8" });
 }
 
-async function writeFile(projectPath: string, data: string | Buffer): Promise<void> {
-  const absolutePath = resolveProjectPath(projectPath, "/public");
+async function writeFile(
+  projectPath: string,
+  data: string | Buffer,
+): Promise<void> {
+  const absolutePath = resolveProjectPath(projectPath, true);
   await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true });
   await fs.promises.writeFile(absolutePath, data);
 }
@@ -89,24 +102,6 @@ async function writeFile(projectPath: string, data: string | Buffer): Promise<vo
 function stat(projectPath: string): fs.Stats | undefined {
   const absolutePath = resolveProjectPath(projectPath);
   return fs.statSync(absolutePath, { throwIfNoEntry: false });
-}
-
-function watchPaths(
-  projectPaths: string[],
-  changeHandler: (path: string) => void,
-  otherHandler: () => void,
-): void {
-  chokidar
-    .watch(projectPaths.map((p) => resolveProjectPath(p)))
-    .on("change", (absolutePath) => {
-      const projectPath = absolutePathToProjectPath(absolutePath);
-      console.log("changed: " + projectPath);
-      changeHandler(projectPath);
-    })
-    .on("add", otherHandler)
-    .on("addDir", otherHandler)
-    .on("unlink", otherHandler)
-    .on("unlinkDir", otherHandler);
 }
 
 type ChokidarEventName = "change" | "add" | "addDir" | "unlink" | "unlinkDir";
@@ -121,7 +116,7 @@ function chokidarEventStream(
 ): AsyncIterableIterator<ChokidarEvent[]> {
   const watcher = chokidar.watch(
     projectPaths.map((p) => resolveProjectPath(p)),
-    {  }
+    { ignoreInitial: true },
   );
   const queue = new AsyncQueue<ChokidarEvent>();
   watcher.on("all", (eventName, absolutePath) => {
@@ -132,12 +127,14 @@ function chokidarEventStream(
 }
 
 export {
-  chokidarEventStream,
+  copyFile,
   findFiles,
   deleteFileSync,
   readBinaryFile,
   readTextFile,
   stat,
-  watchPaths,
   writeFile,
+  chokidarEventStream,
 };
+
+export type { ChokidarEventName, ChokidarEvent };

@@ -3,7 +3,7 @@ import { readBinaryFile, readTextFile } from "../filesystem.js";
 import { Target } from "./Target.js";
 
 abstract class FileInputTarget<T extends Buffer | string> extends Target<
-  Record<string, never>,
+  Record<never, never>,
   T
 > {
   static instancesByPath: Map<string, FileInputTarget<Buffer | string>> =

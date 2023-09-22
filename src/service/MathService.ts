@@ -14,8 +14,8 @@ class MathService {
     const key = JSON.stringify({ source, displayMode });
     return this.cache.getOrSetComputed(key, () =>
       Result.fromThrowing(() =>
-        katex.renderToString(source, { throwOnError: true, displayMode })
-      )
+        katex.renderToString(source, { throwOnError: true, displayMode }),
+      ),
     );
   }
 }

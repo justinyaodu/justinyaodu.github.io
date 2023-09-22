@@ -14,7 +14,7 @@ class HighlightService {
   render(code: string, language: string): string {
     const key = JSON.stringify({ source: code, language });
     return this.cache.getOrSetComputed(key, () =>
-      highlighter.codeToHtml(code, { lang: language })
+      highlighter.codeToHtml(code, { lang: language }),
     );
   }
 }

@@ -1,4 +1,6 @@
-type TargetOutput = string | number | Buffer;
+import util from "node:util";
+
+type TargetOutput = string | number | Buffer | undefined;
 
 type InputTargets<I extends Record<string, TargetOutput>> = {
   [K in keyof I]: I[K] extends infer O extends TargetOutput
@@ -6,35 +8,42 @@ type InputTargets<I extends Record<string, TargetOutput>> = {
     : never;
 };
 
-type BuildResult<O extends TargetOutput> = O | null;
+type TargetStatus = "ok" | "warn" | "fail" | "skip";
+type TargetFreshness = "fresh" | "maybe-stale" | "stale";
 
-type TargetState = "fresh" | "maybe-stale" | "stale";
+type TargetBuildArgs<I> = {
+  inputs: I;
+  warn: (...args: unknown[]) => void;
+};
 
 abstract class Target<
-  I extends Record<string, TargetOutput>,
-  O extends TargetOutput,
+  I extends Record<string, TargetOutput> = never,
+  O extends TargetOutput = TargetOutput,
 > {
-  static instancesByKey: Map<string, Target<never, TargetOutput>> = new Map();
+  static instancesByKey: Map<string, Target> = new Map();
 
   protected readonly buildIsPureFunction: boolean = false;
 
   readonly key: string;
+  readonly inputTargets: Record<string, Target>;
+  readonly dependents: Set<Target>;
   version: number;
-  protected readonly inputTargets: Record<string, Target<never, TargetOutput>>;
-  private state: TargetState;
+  status: TargetStatus;
+  private freshness: TargetFreshness;
   private value: O | null;
-  private readonly dependents: Set<Target<never, TargetOutput>>;
+  private activeBuild: Promise<O | null> | null;
 
   constructor(key: string, inputTargets: InputTargets<I>) {
     this.key = key;
-    this.version = 0;
     this.inputTargets = inputTargets;
-    this.state = "stale";
-    this.value = null;
     this.dependents = new Set();
+    this.version = 0;
+    this.status = "ok";
+    this.freshness = "stale";
+    this.value = null;
+    this.activeBuild = null;
 
     for (const target of Object.values(this.inputTargets)) {
-      console.log(`Dependency: ${target.key} -> ${key}`);
       target.dependents.add(this);
     }
 
@@ -44,38 +53,44 @@ abstract class Target<
     Target.instancesByKey.set(key, this);
   }
 
-  private setState(state: TargetState, reason?: string) {
+  private setState(state: TargetFreshness) {
     if (state === "maybe-stale" && !this.buildIsPureFunction) {
       state = "stale";
     }
 
-    this.state = state;
-    console.log(`\t${state}${reason ? ` (${reason})` : ""}: ${this.key}`);
+    this.freshness = state;
 
-    if (this.state === "stale") {
+    if (this.freshness === "stale") {
       this.onStale();
     }
   }
 
   protected onStale(): void {}
 
-  markStale(reason = "explicitly marked"): void {
-    if (this.state !== "fresh") {
+  markStale(): void {
+    if (this.freshness !== "fresh") {
       return;
     }
-    this.setState("maybe-stale", reason);
+
+    this.setState("maybe-stale");
     for (const target of this.dependents) {
-      target.markStale("dependency");
+      target.markStale();
     }
   }
 
-  async get(): Promise<BuildResult<O>> {
-    if (this.state === "fresh") {
+  async get(): Promise<O | null> {
+    if (this.freshness === "fresh") {
       return this.value;
     }
 
+    if (this.activeBuild === null) {
+      this.activeBuild = this.runBuild();
+    }
+    return this.activeBuild;
+  }
+
+  async runBuild(): Promise<O | null> {
     const newValue = await this.buildWrapper();
-    const ok = newValue !== null;
     const changed = this.value !== newValue;
 
     if (changed) {
@@ -83,53 +98,54 @@ abstract class Target<
       this.value = newValue;
     }
 
-    // TypeScript doesn't know that buildWrapper can change this.state, so the
-    // type of this.state is narrowed incorrectly. Use `as string` to suppress-
-    // the resulting error.
-    // https://github.com/microsoft/TypeScript/issues/50839
-    if ((this.state as string) !== "fresh") {
-      this.setState(
-        "fresh",
-        (ok ? "rebuilt" : "failed") +
-          ", " +
-          (changed ? "now" : "still") +
-          " version " +
-          this.version,
-      );
-    }
+    this.setState("fresh");
+    this.activeBuild = null;
     return this.value;
   }
 
-  private async buildWrapper(): Promise<BuildResult<O>> {
-    const inputValues: Record<string, TargetOutput> = {};
-    for (const [name, target] of Object.entries(this.inputTargets)) {
-      const buildResult = await target.get();
-      if (buildResult === null) {
-        console.warn(`Skipping due to previous failure: ${this.key}`);
+  private async buildWrapper(): Promise<O | null> {
+    const logs: unknown[][] = [];
+    try {
+      const inputs: Record<string, TargetOutput> = {};
+      for (const [name, target] of Object.entries(this.inputTargets)) {
+        const buildResult = await target.get();
+        if (buildResult === null) {
+          this.status = "skip";
+          return null;
+        }
+        inputs[name] = buildResult;
+      }
+
+      if (this.freshness === "maybe-stale") {
+        if (this.isStillFresh()) {
+          this.setState("fresh");
+          return this.value;
+        } else {
+          this.setState("stale");
+        }
+      }
+
+      this.beforeBuild();
+
+      this.status = "ok";
+      try {
+        return await this.build({
+          inputs: inputs as I,
+          warn: (...args) => {
+            this.status = "warn";
+            logs.push(args);
+          },
+        });
+      } catch (e) {
+        this.status = "fail";
+        logs.push([e]);
         return null;
       }
-      inputValues[name] = buildResult;
-    }
-
-    console.log(`Building: ${this.key}`);
-
-    if (this.state === "maybe-stale") {
-      if (this.isStillFresh()) {
-        this.setState("fresh", "inputs unchanged");
-        return this.value;
-      } else {
-        this.setState("stale", "inputs changed");
+    } finally {
+      console.log(`[${this.status.replace("ok", " ok ")}] ${this.key}`);
+      for (const log of logs) {
+        console.log(util.format(...log).replace(/^/gm, "\t"));
       }
-    }
-
-    this.beforeBuild();
-
-    try {
-      return await this.build(inputValues as I);
-    } catch (e) {
-      console.warn(`Failed: ${this.key}`);
-      console.warn(String(e).replaceAll(/^/gm, "\t\t"));
-      return null;
     }
   }
 
@@ -139,7 +155,7 @@ abstract class Target<
 
   protected beforeBuild(): void {}
 
-  protected abstract build(inputValues: I): Promise<O | null>;
+  protected abstract build(args: TargetBuildArgs<I>): Promise<O | null>;
 }
 
 abstract class PureTarget<
@@ -167,3 +183,4 @@ abstract class PureTarget<
 }
 
 export { PureTarget, Target };
+export type { TargetBuildArgs };
