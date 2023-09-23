@@ -20,7 +20,9 @@
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-unnecessary-condition": [
       "error",
-      { "allowConstantLoopConditions": true }
+      {
+        "allowConstantLoopConditions": true
+      }
     ],
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-unused-vars": [
@@ -30,6 +32,7 @@
         "varsIgnorePattern": "^_"
       }
     ],
+    "@typescript-eslint/require-await": "off",
     "no-constant-condition": [
       "error",
       {

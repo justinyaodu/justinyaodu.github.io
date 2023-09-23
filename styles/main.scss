@@ -32,7 +32,7 @@ $main-max-width-factor: 42;
   $main-max-width: $main-max-width-factor * $unit;
 
   :root {
-    background: #eee;
+    background: #fff;
     color: #000;
     font-family: "Open Sans", sans-serif;
     font-weight: 400;
@@ -156,10 +156,11 @@ $main-max-width-factor: 42;
       font-size: 0.8em;
     }
 
-    $code-background: #fdf6e3;
+    $code-border: 1px solid #ddd;
+    $code-background: #fefaf1;
 
     code {
-      box-shadow: 1px 1px 3px #0003;
+      border: $code-border;
       border-radius: 0.5em;
       margin: -0.125em 0;
       padding: 0.125em 0.25em;
@@ -170,11 +171,12 @@ $main-max-width-factor: 42;
 
     pre {
       box-shadow: 2px 2px 6px #0003;
-      background: $code-background;
+      border: $code-border;
       border-radius: 1.5 * $unit;
       margin-left: -1 * $main-padding;
       margin-right: -1 * $main-padding;
       padding: $unit;
+      background: $code-background;
       font-size: 0.8em;
       line-height: 1.5;
       overflow-x: auto;
@@ -187,12 +189,12 @@ $main-max-width-factor: 42;
     }
 
     pre code {
+      border: none;
       border-radius: 0;
       margin: 0;
       padding: 0;
       background: none;
       font-weight: 600;
-      box-shadow: none;
     }
   }
 }
