@@ -11,7 +11,7 @@ class RecordTarget<T extends TargetOutput> extends PureTarget<
 > {
   static numInstances: number = 0;
   constructor(inputTargets: InputTargets<Record<string, T>>) {
-    super(`Record@${++RecordTarget.numInstances}`, inputTargets);
+    super(`Record@${RecordTarget.numInstances++}`, inputTargets);
   }
 
   protected override async build({
