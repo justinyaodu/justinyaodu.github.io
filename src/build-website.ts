@@ -5,9 +5,9 @@ import prettier from "prettier";
 import * as sass from "sass";
 import { getHighlighter } from "shiki";
 
-import { findFiles, readFile, writeFile } from "./filesystem.js";
 import { markdownToHTML } from "./markdown.js";
 import { logError, runMain } from "./script.js";
+import { findFiles, readFile, writeFile } from "./util/filesystem.js";
 
 interface Page {
   title: string;

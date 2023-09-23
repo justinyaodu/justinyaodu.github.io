@@ -1,36 +1,47 @@
 import { slug } from "github-slugger";
 import { JSDOM } from "jsdom";
 
+import { HighlightService } from "../service/HighlightService.js";
 import { MathService } from "../service/MathService.js";
 
-import { PureTarget, Target, type TargetBuildArgs } from "./Target.js";
+import {
+  PureTarget,
+  type TargetBuildArgs,
+  type InputTargets,
+} from "./Target.js";
 
+const highlightService = new HighlightService();
 const mathService = new MathService();
 
-type PagePreviewTargetArgs = { html: string };
+type PagePreviewTargetArgs = { content: string; layout: string };
 class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
-  constructor(html: Target<never, string>) {
-    super(`PagePreview@${html.key}`, { html });
+  constructor(inputTargets: InputTargets<PagePreviewTargetArgs>) {
+    super(`PagePreview@${inputTargets.content.key}`, inputTargets);
   }
 
   override async build({
-    inputs: { html },
+    inputs: { content, layout },
     warn,
   }: TargetBuildArgs<PagePreviewTargetArgs>): Promise<string> {
-    const dom = new JSDOM(html);
+    const dom = new JSDOM(layout);
     const window = dom.window;
     const document = window.document;
 
-    setTitleFromH1: {
+    {
+      const contentDom = new JSDOM(content);
+      document.querySelector("main")!.innerHTML =
+        contentDom.window.document.body.innerHTML;
+    }
+
+    {
       const h1s = document.querySelectorAll("h1");
       if (h1s.length !== 1) {
         warn("Cannot infer title because page has no <h1>");
-        break setTitleFromH1;
+      } else {
+        const title = document.createElement("title");
+        title.textContent = h1s[0].textContent;
+        document.head.appendChild(title);
       }
-
-      const title = document.createElement("title");
-      title.textContent = h1s[0].textContent;
-      document.head.appendChild(title);
     }
 
     {
@@ -45,7 +56,44 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
         }
 
         ids.add(id);
-        heading.id = id;
+
+        // Don't add an id on the page title.
+        if (heading.tagName !== "H1") {
+          heading.id = id;
+        }
+      }
+    }
+
+    {
+      for (const a of document.querySelectorAll<HTMLAnchorElement>("main a")) {
+        const href = a.getAttribute("href")!;
+
+        const externalLinkRegex = /^(https?|mailto):/;
+        if (externalLinkRegex.test(href)) {
+          continue;
+        }
+
+        if (href.startsWith("#")) {
+          continue;
+        }
+
+        const markdownLinkRegex = /^([/]pages.*[.]md)(#.*)?$/;
+        const match = markdownLinkRegex.exec(href);
+        if (match === null) {
+          warn("Link does not match regex:", { href, markdownLinkRegex });
+          continue;
+        }
+
+        const markdownFilePath = match[1];
+        const hash = match[2] || "";
+
+        const pagePath = markdownFilePath
+          .replace(/^[/]pages/, "")
+          .replace(/\.md$/, "")
+          .replace(/[/]index$/, "")
+          .replace(/^$/, "/");
+
+        a.href = pagePath + hash;
       }
     }
 
@@ -123,6 +171,46 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
           warn(result.error);
           pre.style.color = "red";
           pre.textContent = String(result.error);
+        }
+      }
+    }
+
+    {
+      for (const code of document.querySelectorAll("code")) {
+        const inline = code.parentElement!.tagName !== "PRE";
+
+        let language, content;
+        if (inline) {
+          const parseLanguageRegex = /^!([^ ]+) (.*)$/;
+          const match = parseLanguageRegex.exec(code.textContent!);
+
+          if (match === null) {
+            continue;
+          }
+
+          language = match[1];
+          content = match[2];
+        } else {
+          const languages = Array.from(code.classList)
+            .filter((c) => c.startsWith("language-"))
+            .map((c) => c.replace(/^language-/, ""));
+
+          if (languages.length !== 1) {
+            continue;
+          }
+
+          language = languages[0];
+          content = code.textContent!;
+        }
+
+        code.innerHTML = highlightService.render(content, language);
+        if (inline) {
+          code.replaceChildren(
+            ...code.children[0].children[0].children[0].childNodes,
+          );
+        } else {
+          code.replaceChildren(...code.children[0].children[0].childNodes);
+          code.parentElement!.tabIndex = 0;
         }
       }
     }

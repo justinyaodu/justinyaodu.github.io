@@ -1,6 +1,6 @@
 import util from "node:util";
 
-type TargetOutput = string | number | Buffer | undefined;
+type TargetOutput = number | object | string | undefined;
 
 type InputTargets<I extends Record<string, TargetOutput>> = {
   [K in keyof I]: I[K] extends infer O extends TargetOutput
@@ -13,6 +13,7 @@ type TargetFreshness = "fresh" | "maybe-stale" | "stale";
 
 type TargetBuildArgs<I> = {
   inputs: I;
+  log: (...args: unknown[]) => void;
   warn: (...args: unknown[]) => void;
 };
 
@@ -105,6 +106,7 @@ abstract class Target<
 
   private async buildWrapper(): Promise<O | null> {
     const logs: unknown[][] = [];
+    let startTimeMs: number | null = null;
     try {
       const inputs: Record<string, TargetOutput> = {};
       for (const [name, target] of Object.entries(this.inputTargets)) {
@@ -128,9 +130,13 @@ abstract class Target<
       this.beforeBuild();
 
       this.status = "ok";
+      startTimeMs = Date.now();
       try {
         return await this.build({
           inputs: inputs as I,
+          log: (...args) => {
+            logs.push(args);
+          },
           warn: (...args) => {
             this.status = "warn";
             logs.push(args);
@@ -142,9 +148,14 @@ abstract class Target<
         return null;
       }
     } finally {
-      console.log(`[${this.status.replace("ok", " ok ")}] ${this.key}`);
+      const endTimeMs = Date.now();
+      const elapsedTimeMs = startTimeMs === null ? 0 : endTimeMs - startTimeMs;
+      const timingInfo = `${String(elapsedTimeMs).padStart(5)}`;
+      console.log(
+        `[${this.status.replace("ok", " ok ")}]${timingInfo} ${this.key}`,
+      );
       for (const log of logs) {
-        console.log(util.format(...log).replace(/^/gm, "\t"));
+        console.log(util.format(...log).replace(/^/gm, " ".repeat(16)));
       }
     }
   }
@@ -183,4 +194,4 @@ abstract class PureTarget<
 }
 
 export { PureTarget, Target };
-export type { TargetBuildArgs };
+export type { InputTargets, TargetBuildArgs, TargetOutput };

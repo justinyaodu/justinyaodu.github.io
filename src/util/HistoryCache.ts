@@ -1,3 +1,5 @@
+import { getOrSetComputed } from "./map.js";
+
 class HistoryCache<K extends number | string, V> {
   private cache: Map<K, V>;
   private refCounts: Map<K, number>;
@@ -20,13 +22,7 @@ class HistoryCache<K extends number | string, V> {
   }
 
   getOrSetComputed(key: K, callback: (key: K) => V): V {
-    const existing = this.get(key);
-    if (existing !== undefined) {
-      return existing;
-    }
-    const value = callback(key);
-    this.set(key, value);
-    return value;
+    return getOrSetComputed(this.cache, key, callback);
   }
 
   set(key: K, value: V): void {

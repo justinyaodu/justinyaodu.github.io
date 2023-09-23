@@ -1,4 +1,5 @@
-import { readBinaryFile, readTextFile } from "../filesystem.js";
+import { readBinaryFile, readTextFile } from "../util/filesystem.js";
+import { getOrSetComputed } from "../util/map.js";
 
 import { Target } from "./Target.js";
 
@@ -6,27 +7,31 @@ abstract class FileInputTarget<T extends Buffer | string> extends Target<
   Record<never, never>,
   T
 > {
-  static instancesByPath: Map<string, FileInputTarget<Buffer | string>> =
-    new Map();
+  static instances: FileInputTarget<Buffer | string>[] = [];
 
-  constructor(
+  protected constructor(
     public projectPath: string,
     keyPrefix: string,
   ) {
     super(`${keyPrefix}@${projectPath}`, {});
 
-    if (FileInputTarget.instancesByPath.get(projectPath) !== undefined) {
-      throw new Error(
-        `FileInputTarget already exists for path: ${projectPath}`,
-      );
-    }
-    FileInputTarget.instancesByPath.set(projectPath, this);
+    FileInputTarget.instances.push(this);
   }
 }
 
 class BinaryFileInputTarget extends FileInputTarget<Buffer> {
-  constructor(projectPath: string) {
+  static instancesByPath = new Map<string, BinaryFileInputTarget>();
+
+  protected constructor(projectPath: string) {
     super(projectPath, "BinaryFileInput");
+  }
+
+  static from(projectPath: string) {
+    return getOrSetComputed(
+      BinaryFileInputTarget.instancesByPath,
+      projectPath,
+      (path) => new BinaryFileInputTarget(path),
+    );
   }
 
   override async build(): Promise<Buffer> {
@@ -35,8 +40,18 @@ class BinaryFileInputTarget extends FileInputTarget<Buffer> {
 }
 
 class TextFileInputTarget extends FileInputTarget<string> {
-  constructor(projectPath: string) {
+  static instancesByPath = new Map<string, TextFileInputTarget>();
+
+  protected constructor(projectPath: string) {
     super(projectPath, "TextFileInput");
+  }
+
+  static from(projectPath: string) {
+    return getOrSetComputed(
+      TextFileInputTarget.instancesByPath,
+      projectPath,
+      (path) => new TextFileInputTarget(path),
+    );
   }
 
   override async build(): Promise<string> {

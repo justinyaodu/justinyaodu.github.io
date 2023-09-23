@@ -1,4 +1,4 @@
-import { copyFile, deleteFileSync } from "../filesystem.js";
+import { copyFile, deleteFileSync } from "../util/filesystem.js";
 
 import { Target } from "./Target.js";
 

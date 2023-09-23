@@ -1,4 +1,4 @@
-import { deleteFileSync, writeFile } from "../filesystem.js";
+import { deleteFileSync, writeFile } from "../util/filesystem.js";
 
 import { Target, type TargetBuildArgs } from "./Target.js";
 

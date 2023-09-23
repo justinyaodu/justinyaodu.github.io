@@ -2,9 +2,11 @@
   "name": "justinyaodu.github.io",
   "type": "module",
   "scripts": {
-    "build": "rm -rf public/ && cp -a static/ public/ && mkdir -p public/assets/katex/fonts && cp -a node_modules/katex/dist/katex.min.css node_modules/katex/dist/fonts public/assets/katex && tsx src/build-website.ts",
-    "dev": "concurrently \"npm run build\" \"chokidar \\\"assets\\\" \\\"layouts\\\" \\\"pages\\\" \\\"src\\\" \\\"styles\\\" -c \\\"npm run build\\\"\" \"npx http-server public/ -c-1\"",
-    "lint-fix": "eslint --fix --cache --report-unused-disable-directives .; prettier --write ."
+    "build": "rm -rf public/ public-preview/ && tsx src/build.ts",
+    "watch": "while (( $? != 130 )); do rm -rf public/ public-preview/ && tsx src/build.ts --watch; done",
+    "dev": "concurrently \"npm run watch\" \"npx http-server public/ --port 8080 -c-1\" \"npx http-server public-preview/ --port 8081 -c-1\"",
+    "lint": "npx tsc && eslint --cache --report-unused-disable-directives . && prettier --check .",
+    "lint-fix": "npx tsc; eslint --fix --cache --report-unused-disable-directives .; prettier --write ."
   },
   "dependencies": {
     "@types/commonmark": "^0.27.7",

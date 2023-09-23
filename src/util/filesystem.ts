@@ -3,8 +3,8 @@ import path from "node:path";
 
 import chokidar from "chokidar";
 
-import { AsyncBatcher } from "./util/AsyncBatcher.js";
-import { AsyncQueue } from "./util/AsyncQueue.js";
+import { AsyncBatcher } from "./AsyncBatcher.js";
+import { AsyncQueue } from "./AsyncQueue.js";
 
 const PROJECT_ROOT = path.resolve();
 const WRITABLE_PATH_PREFIXES = ["/public/", "/public-preview/"];
