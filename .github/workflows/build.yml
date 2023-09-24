@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - main
-permissions:
-  contents: write
 jobs:
   build:
     name: Build static site and push to gh-pages
@@ -24,5 +22,5 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "${USER}@${HOSTNAME}"
           git add .
-          git commit -m "Rebuild website: $(TZ=UTC0 date +'%Y-%m-%dT%H:%M:%SZ')"
+          git commit -m "Build website: $(TZ=UTC0 date +'%Y-%m-%dT%H:%M:%SZ')"
           git push -uf origin gh-pages
