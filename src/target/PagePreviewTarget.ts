@@ -29,6 +29,9 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
 
     {
       const contentDom = new JSDOM(content);
+      for (const a of contentDom.window.document.querySelectorAll("a")) {
+        a.classList.add("link");
+      }
       document.querySelector("main")!.innerHTML =
         contentDom.window.document.body.innerHTML;
     }
@@ -58,9 +61,15 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
         ids.add(id);
 
         // Don't add an id on the page title.
-        if (heading.tagName !== "H1") {
-          heading.id = id;
+        if (heading.tagName === "H1") {
+          continue;
         }
+
+        heading.id = id;
+        const a = document.createElement("a");
+        a.href = "#" + id;
+        a.replaceChildren(...heading.childNodes);
+        heading.replaceChildren(a);
       }
     }
 

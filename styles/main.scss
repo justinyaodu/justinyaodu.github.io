@@ -56,25 +56,29 @@ $main-max-width-factor: 42;
       border-radius: 0.25em;
       margin: 0 -0.125em;
       padding: 0 0.125em;
-      color: #24f;
 
-      &:hover {
-        background-color: #ddf;
-      }
-
-      &:active {
-        background-color: #bbf;
-      }
-
-      &:visited {
-        color: #80f;
+      &.link {
+        color: #24f;
+        text-decoration: underline;
 
         &:hover {
-          background-color: #edf;
+          background-color: #ddf;
         }
 
         &:active {
-          background-color: #dbf;
+          background-color: #bbf;
+        }
+
+        &:visited {
+          color: #80f;
+
+          &:hover {
+            background-color: #edf;
+          }
+
+          &:active {
+            background-color: #dbf;
+          }
         }
       }
     }
@@ -121,6 +125,22 @@ $main-max-width-factor: 42;
 
       code {
         font-weight: 300;
+      }
+
+      & > a {
+        color: inherit;
+
+        @media (hover: hover) {
+          text-decoration: none;
+        }
+
+        &:hover {
+          text-decoration: underline;
+        }
+
+        &:active {
+          background-color: #eee;
+        }
       }
     }
 
@@ -170,7 +190,7 @@ $main-max-width-factor: 42;
     }
 
     pre {
-      box-shadow: 2px 2px 6px #0003;
+      box-shadow: 0px 0px 3px #0003;
       border: $code-border;
       border-radius: 1.5 * $unit;
       margin-left: -1 * $main-padding;
