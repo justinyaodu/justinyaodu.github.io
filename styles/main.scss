@@ -54,8 +54,8 @@ $main-max-width-factor: 42;
 
     a {
       border-radius: 0.25em;
-      margin: 0 -0.125em;
-      padding: 0 0.125em;
+      margin: -0.125em -0.125em;
+      padding: 0.125em 0.125em;
 
       &.link {
         color: #24f;
@@ -63,10 +63,18 @@ $main-max-width-factor: 42;
 
         &:hover {
           background-color: #ddf;
+
+          * {
+            background-color: inherit;
+          }
         }
 
         &:active {
           background-color: #bbf;
+
+          * {
+            background-color: inherit;
+          }
         }
 
         &:visited {
@@ -74,10 +82,18 @@ $main-max-width-factor: 42;
 
           &:hover {
             background-color: #edf;
+
+            * {
+              background-color: inherit;
+            }
           }
 
           &:active {
             background-color: #dbf;
+
+            * {
+              background-color: inherit;
+            }
           }
         }
       }
@@ -176,11 +192,11 @@ $main-max-width-factor: 42;
       font-size: 0.8em;
     }
 
-    $code-border: 1px solid #ddd;
+    $subtle-border: 1px solid #ddd;
     $code-background: #fefaf1;
 
     code {
-      border: $code-border;
+      border: $subtle-border;
       border-radius: 0.5em;
       margin: -0.125em 0;
       padding: 0.125em 0.25em;
@@ -189,23 +205,24 @@ $main-max-width-factor: 42;
       font-weight: 500;
     }
 
+    aside,
     pre {
-      box-shadow: 0px 0px 3px #0003;
-      border: $code-border;
-      border-radius: 1.5 * $unit;
+      border: $subtle-border;
+      border-radius: $unit;
       margin-left: -1 * $main-padding;
       margin-right: -1 * $main-padding;
       padding: $unit;
+
+      @media (max-width: $main-max-width) {
+        border-radius: 0;
+      }
+    }
+
+    pre {
       background: $code-background;
       font-size: 0.8em;
       line-height: 1.5;
       overflow-x: auto;
-    }
-
-    @media (max-width: $main-max-width) {
-      pre {
-        border-radius: 0;
-      }
     }
 
     pre code {
@@ -215,6 +232,14 @@ $main-max-width-factor: 42;
       padding: 0;
       background: none;
       font-weight: 600;
+    }
+
+    .info {
+      background: #def;
+    }
+
+    .warning {
+      background: #fea;
     }
   }
 }

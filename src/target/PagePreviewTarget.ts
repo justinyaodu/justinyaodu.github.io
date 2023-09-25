@@ -29,9 +29,11 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
 
     {
       const contentDom = new JSDOM(content);
+
       for (const a of contentDom.window.document.querySelectorAll("a")) {
         a.classList.add("link");
       }
+
       document.querySelector("main")!.innerHTML =
         contentDom.window.document.body.innerHTML;
     }
@@ -66,10 +68,32 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
         }
 
         heading.id = id;
+
+        // Wrap the heading contents in a clickable link.
         const a = document.createElement("a");
         a.href = "#" + id;
         a.replaceChildren(...heading.childNodes);
         heading.replaceChildren(a);
+      }
+    }
+
+    // TODO: use <aside> instead of <div>
+    // TODO: parse aside.class1.class2 instead of class1 class2
+    {
+      for (const code of document.querySelectorAll(
+        "blockquote > p:first-child > code:only-child",
+      )) {
+        const split = code.textContent!.split(".");
+        const [tagName, ...classes] = split;
+
+        const p = code.parentElement!;
+        const blockquote = p.parentElement!;
+        p.remove();
+
+        const element = document.createElement(tagName);
+        element.classList.add(...classes);
+        element.replaceChildren(...blockquote.childNodes);
+        blockquote.replaceWith(element);
       }
     }
 
