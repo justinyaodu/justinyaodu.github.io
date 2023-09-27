@@ -1,6 +1,7 @@
 import path from "node:path";
 import process from "node:process";
 
+import { BlogIndexTarget } from "./target/BlogIndexTarget.js";
 import { FileCopyTarget } from "./target/FileCopyTarget.js";
 import {
   BinaryFileInputTarget,
@@ -9,7 +10,11 @@ import {
 } from "./target/FileInputTarget.js";
 import { FileOutputTarget } from "./target/FileOutputTarget.js";
 import { MarkdownTarget } from "./target/MarkdownTarget.js";
-import { PagePreviewTarget } from "./target/PagePreviewTarget.js";
+import {
+  PagePreviewTarget,
+  type PagePreviewOutput,
+} from "./target/PagePreviewTarget.js";
+import { PropertyTarget } from "./target/PropertyTarget.js";
 import { RecordTarget } from "./target/RecordTarget.js";
 import { SassTarget } from "./target/SassTarget.js";
 import { SiteAnalysisTarget } from "./target/SiteAnalysisTarget.js";
@@ -42,7 +47,11 @@ function defineTargets() {
       .replace(/^[/]pages/, "/public-preview")
       .replace(/[.]md$/, ".html");
 
-    new FileOutputTarget(outputPath, pagePreviewTarget);
+    const previewHTML = new PropertyTarget<string, "html">(
+      pagePreviewTarget,
+      "html",
+    );
+    new FileOutputTarget(outputPath, previewHTML);
 
     const pagePath = outputPath
       .replace(/^[/][^/]+/, "")
@@ -56,11 +65,18 @@ function defineTargets() {
     // eventually depend on SiteAnalysisTarget.
     new FileOutputTarget(
       outputPath.replace(/^[/][^/]+/, "/public"),
-      pagePreviewTarget,
+      previewHTML,
     );
   }
 
-  new SiteAnalysisTarget(new RecordTarget(pagePreviewTargets));
+  const pages = new RecordTarget<PagePreviewOutput>(pagePreviewTargets);
+
+  new SiteAnalysisTarget(pages);
+
+  const blogIndex = new BlogIndexTarget({ pages, layout: pageLayoutTarget });
+  for (const publicDir of publicDirs) {
+    new FileOutputTarget(publicDir + "/blog/index.html", blogIndex);
+  }
 
   for (const publicDir of publicDirs) {
     for (const inputPath of findFiles("/static")) {

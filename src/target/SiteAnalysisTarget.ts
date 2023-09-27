@@ -1,11 +1,12 @@
 import { JSDOM } from "jsdom";
 
+import type { PagePreviewOutput } from "./PagePreviewTarget.js";
 import type { RecordTarget } from "./RecordTarget.js";
 import { PureTarget, type TargetBuildArgs } from "./Target.js";
 
-type SiteAnalysisTargetArgs = { pages: Record<string, string> };
+type SiteAnalysisTargetArgs = { pages: Record<string, PagePreviewOutput> };
 class SiteAnalysisTarget extends PureTarget<SiteAnalysisTargetArgs, undefined> {
-  constructor(pages: RecordTarget<string>) {
+  constructor(pages: RecordTarget<PagePreviewOutput>) {
     super("SiteAnalysis", { pages });
   }
 
@@ -14,7 +15,7 @@ class SiteAnalysisTarget extends PureTarget<SiteAnalysisTargetArgs, undefined> {
     warn: outerWarn,
   }: TargetBuildArgs<SiteAnalysisTargetArgs>): Promise<undefined> {
     const doms: Record<string, JSDOM> = Object.fromEntries(
-      Object.entries(pages).map(([k, v]) => [k, new JSDOM(v)]),
+      Object.entries(pages).map(([k, v]) => [k, new JSDOM(v.html)]),
     );
 
     for (const [currentPagePath, dom] of Object.entries(doms)) {
@@ -72,3 +73,4 @@ class SiteAnalysisTarget extends PureTarget<SiteAnalysisTargetArgs, undefined> {
 }
 
 export { SiteAnalysisTarget };
+export type { SiteAnalysisTargetArgs };

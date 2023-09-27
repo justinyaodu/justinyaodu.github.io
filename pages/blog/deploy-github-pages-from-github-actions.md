@@ -1,6 +1,8 @@
 # Deploy to GitHub Pages from GitHub Actions, the easy way
 
-If you use [GitHub Actions](https://docs.github.com/en/actions) to build your static website, you can deploy it to [GitHub Pages](https://pages.github.com) in 10 lines of code. No dependencies, configuration, or access tokens needed!
+_2023-09-24_
+
+If you use [GitHub Actions](https://docs.github.com/en/actions) to build your static website, you can deploy it to [GitHub Pages](https://pages.github.com) in 10 lines of code. No extra dependencies or access tokens needed!
 
 ## Push static files to the `gh-pages` branch
 

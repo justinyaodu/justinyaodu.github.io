@@ -14,18 +14,33 @@ const highlightService = new HighlightService();
 const mathService = new MathService();
 
 type PagePreviewTargetArgs = { content: string; layout: string };
-class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
+type PageMetadata = {
+  title: string | null;
+  published: string | null;
+  descriptionHTML: string | null;
+};
+type PagePreviewOutput = { html: string; metadata: Readonly<PageMetadata> };
+class PagePreviewTarget extends PureTarget<
+  PagePreviewTargetArgs,
+  PagePreviewOutput
+> {
   constructor(inputTargets: InputTargets<PagePreviewTargetArgs>) {
     super(`PagePreview@${inputTargets.content.key}`, inputTargets);
   }
 
   override async build({
     inputs: { content, layout },
+    log,
     warn,
-  }: TargetBuildArgs<PagePreviewTargetArgs>): Promise<string> {
+  }: TargetBuildArgs<PagePreviewTargetArgs>): Promise<PagePreviewOutput> {
     const dom = new JSDOM(layout);
     const window = dom.window;
     const document = window.document;
+    const metadata: PageMetadata = {
+      title: null,
+      published: null,
+      descriptionHTML: null,
+    };
 
     {
       const contentDom = new JSDOM(content);
@@ -39,13 +54,24 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
     }
 
     {
+      const publishedElement = document.querySelector(
+        "main > h1 + p > em:only-child",
+      );
+      if (publishedElement !== null) {
+        metadata.published = publishedElement.textContent;
+        publishedElement.parentElement!.classList.add("published");
+      }
+    }
+
+    {
       const h1s = document.querySelectorAll("h1");
       if (h1s.length !== 1) {
         warn("Cannot infer title because page has no <h1>");
       } else {
-        const title = document.createElement("title");
-        title.textContent = h1s[0].textContent;
-        document.head.appendChild(title);
+        const title = h1s[0].textContent;
+        metadata.title = title;
+
+        document.head.querySelector("title")!.textContent = title;
       }
     }
 
@@ -77,8 +103,6 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
       }
     }
 
-    // TODO: use <aside> instead of <div>
-    // TODO: parse aside.class1.class2 instead of class1 class2
     {
       for (const code of document.querySelectorAll(
         "blockquote > p:first-child > code:only-child",
@@ -248,8 +272,29 @@ class PagePreviewTarget extends PureTarget<PagePreviewTargetArgs, string> {
       }
     }
 
-    return dom.serialize();
+    {
+      const firstParagraph = document.querySelector("main > p:not(.published)");
+      if (firstParagraph !== null) {
+        const descriptionElement = firstParagraph.cloneNode(true) as Element;
+        while (true) {
+          const a = descriptionElement.querySelector("a");
+          if (a === null) {
+            break;
+          }
+          a.outerHTML = a.innerHTML;
+        }
+        metadata.descriptionHTML = descriptionElement.innerHTML;
+      }
+    }
+
+    log(metadata);
+
+    return {
+      html: dom.serialize(),
+      metadata,
+    };
   }
 }
 
 export { PagePreviewTarget };
+export type { PagePreviewOutput };
