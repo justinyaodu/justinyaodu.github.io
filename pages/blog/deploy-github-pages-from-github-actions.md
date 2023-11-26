@@ -1,6 +1,6 @@
 # Deploy to GitHub Pages from GitHub Actions, the easy way
 
-If you use [GitHub Actions](https://docs.github.com/en/actions) to build your static website, you can deploy it to [GitHub Pages](https://pages.github.com) in 10 lines of code. No dependencies, configuration, or access tokens needed!
+If you use [GitHub Actions](https://docs.github.com/en/actions) to build your static website, you can deploy it to [GitHub Pages](https://pages.github.com) in 10 lines of code. No extra dependencies or access tokens needed!
 
 ## Push static files to the `gh-pages` branch
 
@@ -23,7 +23,7 @@ Add this step to the end of your build job, replacing `public/` with the path to
 >
 > If you already have a `gh-pages` branch, this will erase its history!
 
-In case you're wondering how this looks in a complete workflow, I use [this](https://github.com/justinyaodu/justinyaodu.github.io/blob/main/.github/workflows/build.yml) to build and deploy the website you're reading right now.
+An example of a complete workflow can be found [here](https://github.com/justinyaodu/justinyaodu.github.io/blob/main/.github/workflows/build.yml) --- this builds and deploys the website you're reading right now.
 
 ### How it works
 
