@@ -41,7 +41,7 @@ const writeTextFileMacro = targetMacro(
   async ({ allow, path, data }: WriteTextFileMacroArgs) => ({
     allow,
     path,
-    data: await data.tryGet(),
+    data: await data.tryBuild(),
   }),
   deleteFileService,
   ({ allow, path }) => ({ allow, path }),

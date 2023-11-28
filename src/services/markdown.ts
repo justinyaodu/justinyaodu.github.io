@@ -1,6 +1,6 @@
 import { Parser, HtmlRenderer } from "commonmark";
 
-import type { ServiceDefinition } from "../build/Service.js";
+import type { ServiceDefinition } from "../build/service.js";
 
 const parser = new Parser({ smart: true });
 const renderer = new HtmlRenderer({ safe: false });

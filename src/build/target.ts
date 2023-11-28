@@ -1,14 +1,14 @@
-import type { Runner } from "./Runner.js";
-import type { Serializable } from "./Serializable.js";
-import type { ServiceDefinition, ServiceResult } from "./Service.js";
+import type { Runner } from "./runner.js";
+import type { Serializable } from "./serializable.js";
+import type { ServiceDefinition, ServiceResult } from "./service.js";
 
 type TargetResult<O> = ServiceResult<O> | { status: "skipped"; logs: string[] };
 
 type Target<out O extends Serializable = Serializable> = {
   readonly id: string;
   reset(): Promise<void>;
-  get(): Promise<TargetResult<O>>;
-  tryGet(): Promise<O>;
+  build(): Promise<TargetResult<O>>;
+  tryBuild(): Promise<O>;
 };
 
 type TargetDefinition<

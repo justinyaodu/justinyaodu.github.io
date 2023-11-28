@@ -1,4 +1,4 @@
-import type { Serializable } from "./Serializable.js";
+import type { Serializable } from "./serializable.js";
 
 type ServiceCallContext<I> = {
   args: I;
@@ -20,12 +20,6 @@ type ServiceDefinition<
   call(context: ServiceCallContext<I>): O | Promise<O>;
 };
 
-type ServiceArgs<S extends ServiceDefinition<any, any>> =
-  S extends ServiceDefinition<infer I, infer _> ? I : never;
-
-type ServiceReturnType<S extends ServiceDefinition<any, any>> =
-  S extends ServiceDefinition<infer _, infer O> ? O : never;
-
 type Service<I extends Serializable, O extends Serializable> = {
   readonly id: string;
   readonly pure: boolean;
@@ -34,9 +28,7 @@ type Service<I extends Serializable, O extends Serializable> = {
 
 export {
   type Service,
-  type ServiceArgs,
   type ServiceCallContext,
   type ServiceDefinition,
   type ServiceResult,
-  type ServiceReturnType,
 };

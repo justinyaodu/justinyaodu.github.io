@@ -6,7 +6,7 @@ type SassMacroArgs = {
   sass: Target<string>;
 };
 const sassMacro = targetMacro(sassService, ({ sass }: SassMacroArgs) =>
-  sass.tryGet(),
+  sass.tryBuild(),
 );
 
 export { sassMacro };

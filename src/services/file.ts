@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import pathlib from "node:path";
 
-import type { ServiceDefinition } from "../build/Service.js";
+import type { ServiceDefinition } from "../build/service.js";
 
 type FileReadAllow = {
   readPathPrefixes: string[];

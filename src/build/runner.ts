@@ -1,9 +1,9 @@
 import util from "node:util";
 
-import { serialize, type Serializable } from "./Serializable.js";
+import { serialize, type Serializable } from "./serializable.js";
 
-import type { Target, TargetResult, TargetDefinition } from "./Rule.js";
-import type { Service, ServiceDefinition, ServiceResult } from "./Service.js";
+import type { Service, ServiceDefinition, ServiceResult } from "./service.js";
+import type { Target, TargetResult, TargetDefinition } from "./target.js";
 
 class TargetUnavailableError extends Error {
   constructor(
@@ -217,8 +217,8 @@ class LocalTarget<
     }
   }
 
-  async tryGet(): Promise<O> {
-    const result = await this.get();
+  async tryBuild(): Promise<O> {
+    const result = await this.build();
     switch (result.status) {
       case "ok":
       case "warned":
@@ -229,7 +229,7 @@ class LocalTarget<
     }
   }
 
-  get(): Promise<TargetResult<O>> {
+  build(): Promise<TargetResult<O>> {
     const state = this._state;
     switch (state.id) {
       case "building": {

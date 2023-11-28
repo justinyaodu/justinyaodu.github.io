@@ -1,6 +1,6 @@
 import { compileString } from "sass";
 
-import type { ServiceDefinition } from "../build/Service.js";
+import type { ServiceDefinition } from "../build/service.js";
 
 const sassService: ServiceDefinition<string, string> = {
   id: "Sass",

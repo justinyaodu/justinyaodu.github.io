@@ -7,7 +7,7 @@ type MarkdownMacroArgs = {
 };
 const markdownMacro = targetMacro(
   markdownService,
-  ({ markdown }: MarkdownMacroArgs) => markdown.tryGet(),
+  ({ markdown }: MarkdownMacroArgs) => markdown.tryBuild(),
 );
 
 export { markdownMacro };

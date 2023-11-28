@@ -10,8 +10,8 @@ import {
   copyFileMacro,
   readTextFileMacro,
   writeTextFileMacro,
-} from "./rules/file.js";
-import { sassMacro } from "./rules/sass.js";
+} from "./macros/file.js";
+import { sassMacro } from "./macros/sass.js";
 
 import type { FileAllow } from "./services/file.js";
 
@@ -138,7 +138,7 @@ async function main() {
 
   const build = async () => {
     for (const target of fileWriteTargets.values()) {
-      await target.get();
+      await target.build();
     }
   };
 
