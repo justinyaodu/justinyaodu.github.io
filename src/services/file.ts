@@ -47,7 +47,7 @@ async function ensureParentExists(path: string): Promise<void> {
   await fs.mkdir(pathlib.dirname(path), { recursive: true });
 }
 
-const fileCopyServiceDefinition: ServiceDefinition<
+const copyFileService: ServiceDefinition<
   { allow: FileAllow; src: string; dest: string },
   null
 > = {
@@ -62,7 +62,7 @@ const fileCopyServiceDefinition: ServiceDefinition<
   },
 };
 
-const fileDeleteServiceDefinition: ServiceDefinition<
+const deleteFileService: ServiceDefinition<
   {
     allow: FileWriteAllow;
     path: string;
@@ -91,7 +91,7 @@ const fileDeleteServiceDefinition: ServiceDefinition<
   },
 };
 
-const fileReadTextServiceDefinition: ServiceDefinition<
+const readTextFileService: ServiceDefinition<
   {
     allow: FileReadAllow;
     path: string;
@@ -106,7 +106,7 @@ const fileReadTextServiceDefinition: ServiceDefinition<
   },
 };
 
-const fileWriteTextServiceDefinition: ServiceDefinition<
+const writeTextFileService: ServiceDefinition<
   { allow: FileWriteAllow; path: string; data: string },
   null
 > = {
@@ -124,8 +124,8 @@ export {
   type FileAllow,
   type FileReadAllow,
   type FileWriteAllow,
-  fileCopyServiceDefinition,
-  fileDeleteServiceDefinition,
-  fileReadTextServiceDefinition,
-  fileWriteTextServiceDefinition,
+  copyFileService,
+  deleteFileService,
+  readTextFileService,
+  writeTextFileService,
 };

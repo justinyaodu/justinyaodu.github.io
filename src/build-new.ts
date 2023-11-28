@@ -7,11 +7,11 @@ import chokidar from "chokidar";
 
 import { LocalRunner, type Target } from "./build/index.js";
 import {
-  fileCopyRuleDefinition,
-  fileReadTextRuleDefinition,
-  fileWriteTextRuleDefinition,
+  copyFileMacro,
+  readTextFileMacro,
+  writeTextFileMacro,
 } from "./rules/file.js";
-import { sassRuleDefinition } from "./rules/sass.js";
+import { sassMacro } from "./rules/sass.js";
 
 import type { FileAllow } from "./services/file.js";
 
@@ -23,7 +23,7 @@ function projectPathToAbsolutePath(projectPath: string): string {
   return path.join(PROJECT_ROOT, projectPath);
 }
 
-function absPathToProjectPath(absolutePath: string): string {
+function absolutePathToProjectPath(absolutePath: string): string {
   return path.relative(PROJECT_ROOT, absolutePath);
 }
 
@@ -31,7 +31,7 @@ function findFiles(projectPath: string): string[] {
   const absolutePath = projectPathToAbsolutePath(projectPath);
   return fs
     .readdirSync(absolutePath, { recursive: true, withFileTypes: true })
-    .map((e) => absPathToProjectPath(path.join(e.path, e.name)));
+    .map((e) => absolutePathToProjectPath(path.join(e.path, e.name)));
 }
 
 const readPathPrefixes = [
@@ -58,54 +58,70 @@ async function main() {
   const fileReadTargets = new Map<string, Target>();
   const fileWriteTargets = new Map<string, Target>();
 
-  const _fileCopy = r.rule(fileCopyRuleDefinition);
-  const fileCopy = (src: string, dest: string) => {
+  const copyFile = (src: string, dest: string) => {
+    const id = "CopyFile:" + dest;
     src = projectPathToAbsolutePath(src);
     dest = projectPathToAbsolutePath(dest);
-    const target = _fileCopy.target(dest, { allow, src, dest });
+    const target = copyFileMacro(r, {
+      id,
+      allow,
+      src,
+      dest,
+    });
     fileReadTargets.set(src, target);
     fileWriteTargets.set(dest, target);
     return target;
   };
 
-  const _fileReadText = r.rule(fileReadTextRuleDefinition);
-  const fileRead = (path: string) => {
+  const readTextFile = (path: string) => {
+    const id = "ReadTextFile:" + path;
     path = projectPathToAbsolutePath(path);
-    const target = _fileReadText.target(path, { allow, path });
+    const target = readTextFileMacro(r, {
+      id,
+      allow,
+      path,
+    });
     fileReadTargets.set(path, target);
     return target;
   };
 
-  const _fileWriteText = r.rule(fileWriteTextRuleDefinition);
-  const fileWrite = (path: string, data: Target<string>) => {
+  const writeTextFile = (path: string, data: Target<string>) => {
+    const id = "WriteTextFile:" + path;
     path = projectPathToAbsolutePath(path);
-    const target = _fileWriteText.target(path, { allow, path, data });
+    const target = writeTextFileMacro(r, {
+      id,
+      allow,
+      path,
+      data,
+    });
     fileWriteTargets.set(path, target);
     return target;
   };
 
   const publicDirs = ["public"];
 
-  const sassRule = r.rule(sassRuleDefinition);
   for (const src of findFiles("/styles")) {
-    const sass = sassRule.target(`sass:${src}`, fileRead(src));
+    const sassTarget = sassMacro(r, {
+      id: `Sass:${src}`,
+      sass: readTextFile(src),
+    });
     for (const publicDir of publicDirs) {
       const dest = path.join(
         publicDir,
         "assets",
         src.replace(/[.]scss$/, ".css"),
       );
-      fileWrite(dest, sass);
+      writeTextFile(dest, sassTarget);
     }
   }
 
   for (const publicDir of publicDirs) {
     for (const src of findFiles("static")) {
       const dest = src.replace(/^static/, publicDir);
-      fileCopy(src, dest);
+      copyFile(src, dest);
     }
 
-    fileCopy(
+    copyFile(
       "/node_modules/katex/dist/katex.min.css",
       publicDir + "/assets/katex/katex.min.css",
     );
@@ -116,7 +132,7 @@ async function main() {
         "assets/katex/fonts",
         path.basename(src),
       );
-      fileCopy(src, dest);
+      copyFile(src, dest);
     }
   }
 

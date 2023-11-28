@@ -2,7 +2,7 @@ import katex from "katex";
 
 import type { ServiceDefinition } from "../build/index.js";
 
-const mathServiceDefinition: ServiceDefinition<
+const mathService: ServiceDefinition<
   { latex: string; mode: "inline" | "display" },
   string
 > = {
@@ -14,4 +14,4 @@ const mathServiceDefinition: ServiceDefinition<
   },
 };
 
-export { mathServiceDefinition };
+export { mathService };

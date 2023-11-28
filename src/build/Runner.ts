@@ -2,7 +2,7 @@ import util from "node:util";
 
 import { serialize, type Serializable } from "./Serializable.js";
 
-import type { RuleDefinition, Rule, Target, TargetResult } from "./Rule.js";
+import type { Target, TargetResult, TargetDefinition } from "./Rule.js";
 import type { Service, ServiceDefinition, ServiceResult } from "./Service.js";
 
 class TargetUnavailableError extends Error {
@@ -20,14 +20,14 @@ type Runner = {
     definition: ServiceDefinition<I, O>,
   ): Service<I, O>;
 
-  rule<
-    C,
+  target<
+    A,
     I extends Serializable,
     O extends Serializable,
     J extends Serializable,
   >(
-    definition: RuleDefinition<C, I, O, J>,
-  ): Rule<C, O>;
+    definition: TargetDefinition<A, I, O, J>,
+  ): Target<O>;
 };
 
 class LocalRunner implements Runner {
@@ -53,37 +53,25 @@ class LocalRunner implements Runner {
     return service;
   }
 
-  rule<
-    C,
+  target<
+    A,
     I extends Serializable,
     O extends Serializable,
     J extends Serializable,
-  >(definition: RuleDefinition<C, I, O, J>): Rule<C, O> {
-    return {
-      target: (id, config) => this._createTarget(id, config, definition),
-    };
-  }
-
-  private _createTarget<
-    C,
-    I extends Serializable,
-    O extends Serializable,
-    J extends Serializable,
-  >(
-    id: string,
-    config: C,
-    ruleDefinition: RuleDefinition<C, I, O, J>,
-  ): Target<O> {
+  >(definition: TargetDefinition<A, I, O, J>): Target<O> {
+    const id = definition.id;
     if (this._targets.has(id)) {
       const msg = `Cannot redefine target with id ${JSON.stringify(id)}`;
       throw new Error(msg);
     }
 
-    return new LocalTarget(id, config, ruleDefinition, this);
+    const target = new LocalTarget(this, definition);
+    this._targets.set(id, target);
+    return target;
   }
 
   _reportReset(target: Target, result: TargetResult<Serializable>) {
-    console.log(`reset ${target.id}`);
+    // console.log(`reset ${target.id}`);
   }
 
   _reportBuild<O extends Serializable>(
@@ -140,38 +128,38 @@ type LocalTargetState<O> =
   | {
       readonly id: "initial";
       readonly clock: 0;
-      readonly cachedSerializedArgs: null;
+      readonly cachedSerializedInputs: null;
       readonly cachedResult: null;
     }
   | {
       readonly id: "resetting";
       readonly clock: number;
       readonly promise: Promise<void>;
-      readonly cachedSerializedArgs: string | null;
+      readonly cachedSerializedInputs: string | null;
       readonly cachedResult: TargetResult<O> | null;
     }
   | {
       readonly id: "stale";
       readonly clock: number;
-      readonly cachedSerializedArgs: string | null;
+      readonly cachedSerializedInputs: string | null;
       readonly cachedResult: TargetResult<O> | null;
     }
   | {
       readonly id: "building";
       readonly clock: number;
       readonly promise: Promise<TargetResult<O>>;
-      readonly cachedSerializedArgs: string | null;
+      readonly cachedSerializedInputs: string | null;
       readonly cachedResult: TargetResult<O> | null;
     }
   | {
       readonly id: "fresh";
       readonly clock: number;
-      readonly cachedSerializedArgs: string | null;
+      readonly cachedSerializedInputs: string | null;
       readonly cachedResult: TargetResult<O>;
     };
 
 class LocalTarget<
-  C,
+  A,
   I extends Serializable,
   O extends Serializable,
   J extends Serializable,
@@ -181,33 +169,44 @@ class LocalTarget<
   private _state: LocalTargetState<O> = {
     id: "initial",
     clock: 0,
-    cachedSerializedArgs: null,
+    cachedSerializedInputs: null,
     cachedResult: null,
   };
 
+  readonly id: string;
+  private readonly _args: A;
+  private readonly _buildService: Service<I, O>;
+  private readonly _buildInputs: (args: A) => I | Promise<I>;
+  private readonly _resetService: Service<J, Serializable>;
+  private readonly _resetInputs: (args: A) => J | Promise<J>;
+
   constructor(
-    public readonly id: string,
-    private readonly _config: C,
-    private readonly _ruleDefinition: RuleDefinition<C, I, O, J>,
     private readonly _runner: LocalRunner,
+    _definition: TargetDefinition<A, I, O, J>,
   ) {
-    this._registerDependencies(_config);
+    this.id = _definition.id;
+    this._args = _definition.args;
+    this._buildService = _runner.service(_definition.buildService);
+    this._resetService = _runner.service(_definition.resetService);
+    this._buildInputs = _definition.buildInputs;
+    this._resetInputs = _definition.resetInputs;
+    this._registerDependencies(this._args);
   }
 
-  private _registerDependencies(config: unknown): void {
-    if (typeof config !== "object" || config === null) {
+  private _registerDependencies(args: unknown): void {
+    if (typeof args !== "object" || args === null) {
       return;
     }
 
-    if (config instanceof LocalTarget) {
-      config._dependents.add(this);
-    } else if (Array.isArray(config)) {
-      for (const child of config) {
+    if (args instanceof LocalTarget) {
+      args._dependents.add(this);
+    } else if (Array.isArray(args)) {
+      for (const child of args) {
         this._registerDependencies(child);
       }
     } else {
-      for (const key of Reflect.ownKeys(config)) {
-        this._registerDependencies(config[key as keyof typeof config]);
+      for (const key of Reflect.ownKeys(args)) {
+        this._registerDependencies(args[key as keyof typeof args]);
       }
     }
   }
@@ -260,7 +259,7 @@ class LocalTarget<
     const freshClock = state.clock + 2;
 
     const buildPromise = resetPromise.then(() =>
-      this._doBuild(state.cachedSerializedArgs, state.cachedResult),
+      this._doBuild(state.cachedSerializedInputs, state.cachedResult),
     );
     const resultPromise = buildPromise.then((s) => s.cachedResult);
 
@@ -268,16 +267,16 @@ class LocalTarget<
       id: "building",
       clock: buildingClock,
       promise: resultPromise,
-      cachedSerializedArgs: state.cachedSerializedArgs,
+      cachedSerializedInputs: state.cachedSerializedInputs,
       cachedResult: state.cachedResult,
     };
 
-    void buildPromise.then(({ cachedSerializedArgs, cachedResult }) => {
+    void buildPromise.then(({ cachedSerializedInputs, cachedResult }) => {
       if (this._state.clock === buildingClock) {
         this._proposeState({
           id: "fresh",
           clock: freshClock,
-          cachedSerializedArgs,
+          cachedSerializedInputs,
           cachedResult,
         });
       }
@@ -287,29 +286,26 @@ class LocalTarget<
   }
 
   private async _doBuild(
-    cachedSerializedArgs: string | null,
+    cachedSerializedInputs: string | null,
     cachedResult: TargetResult<O> | null,
   ): Promise<{
-    cachedSerializedArgs: string | null;
+    cachedSerializedInputs: string | null;
     cachedResult: TargetResult<O>;
   }> {
-    const build = this._ruleDefinition.build;
-
-    let serializedArgs: string | null = null;
+    let serializedInputs: string | null = null;
     let result: TargetResult<O>;
     let usedCache = false;
     try {
-      const service = this._runner.service(build.service);
-      const args = await build.args(this._config);
+      const inputs = await this._buildInputs(this._args);
       if (
-        service.pure &&
-        (serializedArgs = serialize(args)) === cachedSerializedArgs &&
+        this._buildService.pure &&
+        (serializedInputs = serialize(inputs)) === cachedSerializedInputs &&
         cachedResult !== null
       ) {
         result = cachedResult;
         usedCache = true;
       } else {
-        result = await service.call(args);
+        result = await this._buildService.call(inputs);
       }
     } catch (e) {
       result = {
@@ -320,7 +316,7 @@ class LocalTarget<
 
     this._runner._reportBuild(this, result, usedCache);
     return {
-      cachedSerializedArgs: serializedArgs,
+      cachedSerializedInputs: serializedInputs,
       cachedResult: result,
     };
   }
@@ -352,7 +348,7 @@ class LocalTarget<
       id: "resetting",
       clock: resettingClock,
       promise: resetPromise,
-      cachedSerializedArgs: state.cachedSerializedArgs,
+      cachedSerializedInputs: state.cachedSerializedInputs,
       cachedResult: state.cachedResult,
     };
 
@@ -360,7 +356,7 @@ class LocalTarget<
       this._proposeState({
         id: "stale",
         clock: staleClock,
-        cachedSerializedArgs: state.cachedSerializedArgs,
+        cachedSerializedInputs: state.cachedSerializedInputs,
         cachedResult: state.cachedResult,
       });
     });
@@ -373,16 +369,14 @@ class LocalTarget<
   }
 
   private async _doReset(): Promise<void> {
-    const reset = this._ruleDefinition.reset;
-    if (reset === undefined) {
+    if (this._resetService.pure) {
       return;
     }
 
     let result: TargetResult<Serializable>;
     try {
-      const service = this._runner.service(reset.service);
-      const args = await reset.args(this._config);
-      result = await service.call(args);
+      const inputs = await this._resetInputs(this._args);
+      result = await this._resetService.call(inputs);
     } catch (e) {
       result = {
         status: "failed",

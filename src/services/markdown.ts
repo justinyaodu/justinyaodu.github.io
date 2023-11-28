@@ -5,10 +5,10 @@ import type { ServiceDefinition } from "../build/Service.js";
 const parser = new Parser({ smart: true });
 const renderer = new HtmlRenderer({ safe: false });
 
-const markdownServiceDefinition: ServiceDefinition<string, string> = {
+const markdownService: ServiceDefinition<string, string> = {
   id: "Markdown",
   pure: true,
   call: ({ args: source }) => renderer.render(parser.parse(source)),
 };
 
-export { markdownServiceDefinition };
+export { markdownService };

@@ -4,7 +4,7 @@ import type { ServiceDefinition } from "../build/index.js";
 
 const highlighter = await getHighlighter({ theme: "solarized-light" });
 
-const highlightServiceDefinition: ServiceDefinition<
+const highlightService: ServiceDefinition<
   { code: string; language: string },
   string
 > = {
@@ -14,4 +14,4 @@ const highlightServiceDefinition: ServiceDefinition<
     highlighter.codeToHtml(code, { lang: language }),
 };
 
-export { highlightServiceDefinition };
+export { highlightService };

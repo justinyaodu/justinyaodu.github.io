@@ -11,7 +11,10 @@ type ServiceResult<O> =
   | { status: "ok" | "warned"; value: O; logs: string[] }
   | { status: "failed"; logs: string[] };
 
-type ServiceDefinition<I extends Serializable, O extends Serializable> = {
+type ServiceDefinition<
+  in I extends Serializable,
+  out O extends Serializable,
+> = {
   readonly id: string;
   readonly pure: boolean;
   call(context: ServiceCallContext<I>): O | Promise<O>;
