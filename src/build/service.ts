@@ -8,8 +8,8 @@ type ServiceCallContext<I> = {
 };
 
 type ServiceResult<O> =
-  | { status: "ok" | "warned"; value: O; logs: string[] }
-  | { status: "failed"; logs: string[] };
+  | { status: "ok" | "warned"; value: O; logs: string }
+  | { status: "failed"; logs: string };
 
 type ServiceDefinition<
   in I extends Serializable,

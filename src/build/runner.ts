@@ -16,6 +16,12 @@ class TargetUnavailableError extends Error {
 }
 
 type Runner = {
+  on(type: "all", listener: (event: RunnerEvent) => void): void;
+  on<T extends RunnerEvent["type"]>(
+    type: T,
+    listener: (event: RunnerEvent & { type: T }) => void,
+  ): void;
+
   service<I extends Serializable, O extends Serializable>(
     definition: ServiceDefinition<I, O>,
   ): Service<I, O>;
@@ -30,9 +36,82 @@ type Runner = {
   ): Target<O>;
 };
 
+type RawRunnerEvent =
+  | {
+      readonly type: "targetResetStart";
+      readonly target: Target;
+    }
+  | {
+      readonly type: "targetResetExecute";
+      readonly target: Target;
+    }
+  | {
+      readonly type: "targetResetEnd";
+      readonly target: Target;
+      readonly result: ServiceResult<Serializable>;
+    }
+  | {
+      readonly type: "targetBuildStart";
+      readonly target: Target;
+    }
+  | {
+      readonly type: "targetBuildExecute";
+      readonly target: Target;
+    }
+  | {
+      readonly type: "targetBuildEnd";
+      readonly target: Target;
+      readonly result: TargetResult<Serializable>;
+      readonly cached: boolean;
+      readonly obsolete: boolean;
+    };
+
+type RunnerEvent = RawRunnerEvent & {
+  readonly sequence: number;
+  readonly timestampMs: number;
+} extends infer I
+  ? { [K in keyof I]: I[K] }
+  : never;
+
 class LocalRunner implements Runner {
-  private _targets = new Map<string, Target>();
+  private _listeners: {
+    type: "all" | RunnerEvent["type"];
+    listener: (event: RunnerEvent) => void;
+  }[] = [];
   private _services = new Map<string, LocalService<any, any>>();
+  private _targets = new Map<string, Target>();
+  private _sequence = 0;
+
+  on(type: "all", listener: (event: RunnerEvent) => void): void;
+  on<T extends RunnerEvent["type"]>(
+    type: T,
+    listener: (event: RunnerEvent & { type: T }) => void,
+  ): void;
+  on(
+    type: "all" | RunnerEvent["type"],
+    listener: (event: RunnerEvent) => void,
+  ): void {
+    this._listeners.push({ type, listener });
+  }
+
+  _emit(event: RawRunnerEvent): void {
+    const sequence = this._sequence++;
+    const timestampMs = Date.now();
+
+    for (const { type, listener } of this._listeners) {
+      if (type === event.type || type === "all") {
+        try {
+          listener({
+            ...event,
+            sequence,
+            timestampMs,
+          });
+        } catch (e) {
+          console.log("Runner listener threw", e);
+        }
+      }
+    }
+  }
 
   service<I extends Serializable, O extends Serializable>(
     definition: ServiceDefinition<I, O>,
@@ -69,18 +148,6 @@ class LocalRunner implements Runner {
     this._targets.set(id, target);
     return target;
   }
-
-  _reportReset(target: Target, result: TargetResult<Serializable>) {
-    // console.log(`reset ${target.id}`);
-  }
-
-  _reportBuild<O extends Serializable>(
-    target: Target<O>,
-    result: TargetResult<O>,
-    usedCache: boolean,
-  ) {
-    console.log(`built ${target.id}${usedCache ? " (unchanged)" : ""}`);
-  }
 }
 
 class LocalService<I extends Serializable, O extends Serializable>
@@ -98,12 +165,12 @@ class LocalService<I extends Serializable, O extends Serializable>
     let warned = false as boolean;
     const logs: string[] = [];
 
-    const log = (...args: unknown[]) => {
-      logs.push(util.format(args));
+    const log = (...values: unknown[]) => {
+      logs.push(util.format(...values));
     };
 
-    const warn = (...args: unknown[]) => {
-      log(args);
+    const warn = (...values: unknown[]) => {
+      log(...values);
       warned = true;
     };
 
@@ -112,13 +179,13 @@ class LocalService<I extends Serializable, O extends Serializable>
       return {
         status: warned ? "warned" : "ok",
         value,
-        logs,
+        logs: logs.join("\n"),
       };
     } catch (e) {
       logs.push(util.inspect(e));
       return {
         status: "failed",
-        logs,
+        logs: logs.join("\n"),
       };
     }
   }
@@ -211,9 +278,21 @@ class LocalTarget<
     }
   }
 
-  private _proposeState(state: LocalTargetState<O>) {
-    if (this._state.clock + 1 === state.clock) {
+  private _proposeState(state: LocalTargetState<O>): boolean {
+    const successful = this._state.clock + 1 === state.clock;
+    if (successful) {
       this._state = state;
+    }
+    return successful;
+  }
+
+  private _setState(state: LocalTargetState<O>): void {
+    const successful = this._proposeState(state);
+    if (!successful) {
+      const msg = `Internal error: _proposeState unsuccessful. Current state is ${util.inspect(
+        this._state,
+      )}; proposed ${util.inspect(state)}`;
+      throw new Error(msg);
     }
   }
 
@@ -232,20 +311,24 @@ class LocalTarget<
   build(): Promise<TargetResult<O>> {
     const state = this._state;
     switch (state.id) {
-      case "building": {
+      case "initial":
+        // Don't do a recursive reset here because this initial build might be
+        // triggered by a dependent's initial build, and trying to reset the
+        // dependent would be bad.
+        // Since all dependents would have to build this target before building
+        // themselves, and this target has never been built, we don't need a
+        // recursive reset anyway.
+        return this._resetSelf().then(() => this.build());
+
+      case "building":
         return state.promise;
-      }
-      case "fresh": {
+
+      case "fresh":
         return Promise.resolve(state.cachedResult);
-      }
     }
 
     let resetPromise: Promise<void>;
     switch (state.id) {
-      case "initial":
-        resetPromise = this._doReset();
-        break;
-
       case "resetting":
         resetPromise = state.promise;
         break;
@@ -258,43 +341,58 @@ class LocalTarget<
     const buildingClock = state.clock + 1;
     const freshClock = state.clock + 2;
 
-    const buildPromise = resetPromise.then(() =>
-      this._doBuild(state.cachedSerializedInputs, state.cachedResult),
-    );
-    const resultPromise = buildPromise.then((s) => s.cachedResult);
+    const buildPromise = resetPromise.then(async () => {
+      const { serializedInputs, result, usedCache } = await this._doBuild(
+        state.cachedSerializedInputs,
+        state.cachedResult,
+      );
 
-    this._state = {
-      id: "building",
-      clock: buildingClock,
-      promise: resultPromise,
-      cachedSerializedInputs: state.cachedSerializedInputs,
-      cachedResult: state.cachedResult,
-    };
+      const obsolete = !this._proposeState({
+        id: "fresh",
+        clock: freshClock,
+        cachedSerializedInputs: serializedInputs,
+        cachedResult: result,
+      });
 
-    void buildPromise.then(({ cachedSerializedInputs, cachedResult }) => {
-      if (this._state.clock === buildingClock) {
-        this._proposeState({
-          id: "fresh",
-          clock: freshClock,
-          cachedSerializedInputs,
-          cachedResult,
-        });
-      }
+      this._runner._emit({
+        type: "targetBuildEnd",
+        target: this,
+        result,
+        cached: usedCache,
+        obsolete,
+      });
+
+      return result;
     });
 
-    return resultPromise;
+    this._setState({
+      id: "building",
+      clock: buildingClock,
+      promise: buildPromise,
+      cachedSerializedInputs: state.cachedSerializedInputs,
+      cachedResult: state.cachedResult,
+    });
+
+    this._runner._emit({
+      type: "targetBuildStart",
+      target: this,
+    });
+
+    return buildPromise;
   }
 
   private async _doBuild(
     cachedSerializedInputs: string | null,
     cachedResult: TargetResult<O> | null,
   ): Promise<{
-    cachedSerializedInputs: string | null;
-    cachedResult: TargetResult<O>;
+    serializedInputs: string | null;
+    result: TargetResult<O>;
+    usedCache: boolean;
   }> {
     let serializedInputs: string | null = null;
     let result: TargetResult<O>;
     let usedCache = false;
+
     try {
       const inputs = await this._buildInputs(this._args);
       if (
@@ -305,29 +403,82 @@ class LocalTarget<
         result = cachedResult;
         usedCache = true;
       } else {
+        this._runner._emit({
+          type: "targetBuildExecute",
+          target: this,
+        });
         result = await this._buildService.call(inputs);
       }
     } catch (e) {
       result = {
         status: e instanceof TargetUnavailableError ? "skipped" : "failed",
-        logs: [util.inspect(e)],
+        logs: util.inspect(e),
       };
     }
 
-    this._runner._reportBuild(this, result, usedCache);
     return {
-      cachedSerializedInputs: serializedInputs,
-      cachedResult: result,
+      serializedInputs,
+      result,
+      usedCache,
     };
   }
 
   async reset(): Promise<void> {
     const promises: Promise<void>[] = [];
-    this._recursiveReset(promises);
+    this._resetSelfAndDependents(promises);
     await Promise.all(promises);
   }
 
-  private _recursiveReset(promises: Promise<void>[]): void {
+  private _resetSelf(): Promise<void> {
+    const state = this._state;
+    switch (state.id) {
+      case "resetting":
+      case "stale": {
+        const msg = `Internal error: _resetSelf called in state ${state.id}`;
+        throw new Error(msg);
+      }
+    }
+
+    const buildPromise =
+      state.id === "building" ? state.promise : Promise.resolve();
+
+    const resettingClock = state.clock + 1;
+    const staleClock = state.clock + 2;
+
+    const resetPromise = buildPromise.then(async () => {
+      const result = await this._doReset();
+
+      this._setState({
+        id: "stale",
+        clock: staleClock,
+        cachedSerializedInputs: state.cachedSerializedInputs,
+        cachedResult: state.cachedResult,
+      });
+
+      this._runner._emit({
+        type: "targetResetEnd",
+        target: this,
+        result,
+      });
+    });
+
+    this._setState({
+      id: "resetting",
+      clock: resettingClock,
+      promise: resetPromise,
+      cachedSerializedInputs: state.cachedSerializedInputs,
+      cachedResult: state.cachedResult,
+    });
+
+    this._runner._emit({
+      type: "targetResetStart",
+      target: this,
+    });
+
+    return resetPromise;
+  }
+
+  private _resetSelfAndDependents(promises: Promise<void>[]): void {
     const state = this._state;
     switch (state.id) {
       case "resetting":
@@ -337,54 +488,28 @@ class LocalTarget<
         return;
     }
 
-    const buildPromise =
-      state.id === "building" ? state.promise : Promise.resolve();
-    const resetPromise = buildPromise.then(() => this._doReset());
-
-    const resettingClock = state.clock + 1;
-    const staleClock = state.clock + 2;
-
-    this._state = {
-      id: "resetting",
-      clock: resettingClock,
-      promise: resetPromise,
-      cachedSerializedInputs: state.cachedSerializedInputs,
-      cachedResult: state.cachedResult,
-    };
-
-    void resetPromise.then(() => {
-      this._proposeState({
-        id: "stale",
-        clock: staleClock,
-        cachedSerializedInputs: state.cachedSerializedInputs,
-        cachedResult: state.cachedResult,
-      });
-    });
-
-    promises.push(resetPromise);
-
+    promises.push(this._resetSelf());
     for (const dependent of this._dependents) {
-      dependent._recursiveReset(promises);
+      dependent._resetSelfAndDependents(promises);
     }
   }
 
-  private async _doReset(): Promise<void> {
-    if (this._resetService.pure) {
-      return;
-    }
-
-    let result: TargetResult<Serializable>;
+  private async _doReset(): Promise<ServiceResult<Serializable>> {
+    let result: ServiceResult<Serializable>;
     try {
       const inputs = await this._resetInputs(this._args);
+      this._runner._emit({
+        type: "targetResetExecute",
+        target: this,
+      });
       result = await this._resetService.call(inputs);
     } catch (e) {
       result = {
         status: "failed",
-        logs: [util.inspect(e)],
+        logs: util.inspect(e),
       };
     }
-
-    this._runner._reportReset(this, result);
+    return result;
   }
 }
 

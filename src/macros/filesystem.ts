@@ -67,6 +67,7 @@ function filesystem(
         recursive: true,
         withFileTypes: true,
       })
+      .filter((e) => e.isFile())
       .map((e) => toProjectPath(pathlib.join(e.path, e.name)));
 
   const readPathPrefixes = args.readPathPrefixes.map(toAbsolutePath);
@@ -131,13 +132,14 @@ function filesystem(
     let events: { type: string; path: string }[] = [];
     let eventsNonEmptyResolve: () => void;
     let eventsNonEmptyPromise: Promise<void> = new Promise(
-      (r) => (eventsNonEmptyResolve = r),
+      (res) => (eventsNonEmptyResolve = res),
     );
 
     const watcher = chokidar
       .watch(watchPathPrefixes, { cwd: projectRoot, ignoreInitial: true })
       .on("all", (type, path) => {
-        events.push({ type, path });
+        const event = { type, path };
+        events.push(event);
         eventsNonEmptyResolve();
       });
 
@@ -147,7 +149,9 @@ function filesystem(
 
       const batch = events;
       events = [];
-      eventsNonEmptyPromise = new Promise((r) => (eventsNonEmptyResolve = r));
+      eventsNonEmptyPromise = new Promise(
+        (res) => (eventsNonEmptyResolve = res),
+      );
 
       for (const { type, path } of batch) {
         let targets;

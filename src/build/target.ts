@@ -2,7 +2,7 @@ import type { Runner } from "./runner.js";
 import type { Serializable } from "./serializable.js";
 import type { ServiceDefinition, ServiceResult } from "./service.js";
 
-type TargetResult<O> = ServiceResult<O> | { status: "skipped"; logs: string[] };
+type TargetResult<O> = ServiceResult<O> | { status: "skipped"; logs: string };
 
 type Target<out O extends Serializable = Serializable> = {
   readonly id: string;

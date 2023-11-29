@@ -19,6 +19,7 @@
   "rules": {
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-shadow": ["warn", { "ignoreTypeValueShadow": true }],
     "@typescript-eslint/no-unnecessary-condition": [
       "error",
       {
