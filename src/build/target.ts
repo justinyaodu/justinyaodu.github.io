@@ -4,11 +4,19 @@ import type { ServiceDefinition, ServiceResult } from "./service.js";
 
 type TargetResult<O> = ServiceResult<O> | { status: "skipped"; logs: string };
 
+type TargetThenOptions = {
+  pure?: boolean;
+};
+
 type Target<out O extends Serializable = Serializable> = {
   readonly id: string;
   reset(): Promise<void>;
   build(): Promise<TargetResult<O>>;
   tryBuild(): Promise<O>;
+  then<P extends Serializable>(
+    callback: (value: O) => P,
+    options?: TargetThenOptions,
+  ): Target<P>;
 };
 
 type TargetDefinition<
@@ -91,6 +99,7 @@ export {
   type Target,
   type TargetDefinition,
   type TargetResult,
+  type TargetThenOptions,
   targetMacro,
   macroCompose,
 };

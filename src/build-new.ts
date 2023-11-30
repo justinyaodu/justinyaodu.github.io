@@ -31,7 +31,7 @@ async function main() {
     });
 
   for (const src of findFiles("pages")) {
-    const html = preprocessPageContentMacro(r, {
+    const pageContent = preprocessPageContentMacro(r, {
       id: `PreprocessPageContent:${src}`,
       html: markdownMacro(r, {
         id: `Markdown:${src}`,
@@ -41,7 +41,10 @@ async function main() {
 
     for (const publicDir of publicDirs) {
       const dest = src.replace(/^pages/, publicDir).replace(/[.]md$/, ".html");
-      writeTextFile(dest, html);
+      writeTextFile(
+        dest,
+        pageContent.then((o) => o.html),
+      );
     }
   }
 
@@ -113,7 +116,6 @@ async function main() {
           if (e.result.status !== "ok") {
             console.log(`Build ${e.result.status}: ${e.target.id}`);
             if (e.result.status !== "skipped") {
-              console.log(JSON.stringify(e.result.logs));
               console.log(e.result.logs.replaceAll(/^/gm, "\t"));
             }
           }

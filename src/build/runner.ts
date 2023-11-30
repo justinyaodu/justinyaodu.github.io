@@ -1,9 +1,15 @@
 import util from "node:util";
 
 import { serialize, type Serializable } from "./serializable.js";
+import {
+  type Target,
+  type TargetResult,
+  type TargetDefinition,
+  targetMacro,
+  type TargetThenOptions,
+} from "./target.js";
 
 import type { Service, ServiceDefinition, ServiceResult } from "./service.js";
-import type { Target, TargetResult, TargetDefinition } from "./target.js";
 
 class TargetUnavailableError extends Error {
   constructor(
@@ -81,6 +87,7 @@ class LocalRunner implements Runner {
   private _services = new Map<string, LocalService<any, any>>();
   private _targets = new Map<string, Target>();
   private _sequence = 0;
+  private _anonymousCounter = 0;
 
   on(type: "all", listener: (event: RunnerEvent) => void): void;
   on<T extends RunnerEvent["type"]>(
@@ -147,6 +154,14 @@ class LocalRunner implements Runner {
     const target = new LocalTarget(this, definition);
     this._targets.set(id, target);
     return target;
+  }
+
+  _anonymousId(): string {
+    let id;
+    do {
+      id = `Anonymous${this._anonymousCounter++}`;
+    } while (this._services.has(id) || this._targets.has(id));
+    return id;
   }
 }
 
@@ -510,6 +525,20 @@ class LocalTarget<
       };
     }
     return result;
+  }
+
+  then<P extends Serializable>(
+    callback: (value: O) => P | Promise<P>,
+    options?: TargetThenOptions,
+  ): Target<P> {
+    const id = this._runner._anonymousId();
+    const serviceDefinition: ServiceDefinition<O, P> = {
+      id,
+      pure: options?.pure ?? false,
+      call: ({ args }) => callback(args),
+    };
+    const macro = targetMacro(serviceDefinition, () => this.tryBuild());
+    return macro(this._runner, { id });
   }
 }
 

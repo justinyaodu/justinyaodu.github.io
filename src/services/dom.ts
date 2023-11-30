@@ -3,13 +3,22 @@ import { JSDOM } from "jsdom";
 
 import type { ServiceDefinition } from "../build/index.js";
 
-const preprocessPageContentService: ServiceDefinition<string, string> = {
+type PreprocessPageContentReturn = {
+  html: string;
+  title: string | null;
+};
+const preprocessPageContentService: ServiceDefinition<
+  string,
+  PreprocessPageContentReturn
+> = {
   id: "PreprocessPageContent",
   pure: true,
   call: ({ args, warn }) => {
     const dom = new JSDOM(args);
     const { window } = dom;
     const { document } = window;
+
+    const title = document.querySelector("h1")?.textContent ?? null;
 
     for (const a of document.querySelectorAll("a")) {
       a.classList.add("link");
@@ -112,7 +121,10 @@ const preprocessPageContentService: ServiceDefinition<string, string> = {
       blockquote.replaceWith(element);
     }
 
-    return dom.serialize();
+    return {
+      html: dom.serialize(),
+      title,
+    };
   },
 };
 
