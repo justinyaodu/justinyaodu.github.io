@@ -1,20 +1,19 @@
 import { slug } from "github-slugger";
 import { JSDOM } from "jsdom";
 
-import type { ServiceDefinition } from "../build/index.js";
+import { defineService } from "../build/service.js";
 
-type PreprocessPageContentReturn = {
-  html: string;
-  title: string | null;
-};
-const preprocessPageContentService: ServiceDefinition<
+const preprocessPageContentService = defineService<
   string,
-  PreprocessPageContentReturn
-> = {
+  {
+    html: string;
+    title: string | null;
+  }
+>({
   id: "PreprocessPageContent",
   pure: true,
-  call: ({ args, warn }) => {
-    const dom = new JSDOM(args);
+  run: (html, { warn }) => {
+    const dom = new JSDOM(html);
     const { window } = dom;
     const { document } = window;
 
@@ -126,6 +125,6 @@ const preprocessPageContentService: ServiceDefinition<
       title,
     };
   },
-};
+});
 
 export { preprocessPageContentService };

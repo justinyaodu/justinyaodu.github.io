@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import pathlib from "node:path";
 
-import type { ServiceDefinition } from "../build/service.js";
+import { defineService } from "../build/service.js";
 
 type FileReadAllow = {
   readPathPrefixes: string[];
@@ -47,31 +47,31 @@ async function ensureParentExists(path: string): Promise<void> {
   await fs.mkdir(pathlib.dirname(path), { recursive: true });
 }
 
-const copyFileService: ServiceDefinition<
+const copyFileService = defineService<
   { allow: FileAllow; src: string; dest: string },
   null
-> = {
+>({
   id: "FileCopy",
   pure: false,
-  call: async ({ args: { allow, src, dest } }) => {
+  run: async ({ allow, src, dest }) => {
     assertAllowed(allow, "read", src);
     assertAllowed(allow, "write", dest);
     await ensureParentExists(dest);
     await fs.copyFile(src, dest);
     return null;
   },
-};
+});
 
-const deleteFileService: ServiceDefinition<
+const deleteFileService = defineService<
   {
     allow: FileWriteAllow;
     path: string;
   },
   null
-> = {
+>({
   id: "FileDelete",
   pure: false,
-  call: async ({ args: { allow, path } }) => {
+  run: async ({ allow, path }) => {
     assertAllowed(allow, "write", path);
     try {
       await fs.unlink(path);
@@ -89,36 +89,36 @@ const deleteFileService: ServiceDefinition<
     }
     return null;
   },
-};
+});
 
-const readTextFileService: ServiceDefinition<
+const readTextFileService = defineService<
   {
     allow: FileReadAllow;
     path: string;
   },
   string
-> = {
+>({
   id: "FileReadText",
   pure: false,
-  call: async ({ args: { allow, path } }) => {
+  run: async ({ allow, path }) => {
     assertAllowed(allow, "read", path);
     return await fs.readFile(path, "utf8");
   },
-};
+});
 
-const writeTextFileService: ServiceDefinition<
+const writeTextFileService = defineService<
   { allow: FileWriteAllow; path: string; data: string },
   null
-> = {
+>({
   id: "FileWriteText",
   pure: false,
-  call: async ({ args: { allow, path, data } }) => {
+  run: async ({ allow, path, data }) => {
     assertAllowed(allow, "write", path);
     await ensureParentExists(path);
     await fs.writeFile(path, data);
     return null;
   },
-};
+});
 
 export {
   type FileAllow,

@@ -35,6 +35,8 @@
       }
     ],
     "@typescript-eslint/require-await": "off",
+    "@typescript-eslint/switch-exhaustiveness-check": "error",
+    "eqeqeq": "error",
     "no-constant-condition": [
       "error",
       {

@@ -1,18 +1,18 @@
 import path from "node:path";
 import url from "node:url";
 
-import { LocalRunner } from "./build/index.js";
-import { preprocessPageContentMacro } from "./macros/dom.js";
+import { defineRule, defineService, runner } from "./build/index.js";
+import { preprocessPageContentRule } from "./macros/dom.js";
 import { filesystem } from "./macros/filesystem.js";
-import { markdownMacro } from "./macros/markdown.js";
-import { sassMacro } from "./macros/sass.js";
+import { markdownRule } from "./macros/markdown.js";
+import { sassRule } from "./macros/sass.js";
 
 // https://blog.logrocket.com/alternatives-dirname-node-js-es-modules/
 const __filename = url.fileURLToPath(import.meta.url);
 const projectRoot = path.dirname(path.dirname(__filename));
 
 async function main() {
-  const r = new LocalRunner();
+  const r = runner();
 
   const publicDirs = ["public"];
 
@@ -31,28 +31,22 @@ async function main() {
     });
 
   for (const src of findFiles("pages")) {
-    const pageContent = preprocessPageContentMacro(r, {
-      id: `PreprocessPageContent:${src}`,
-      html: markdownMacro(r, {
-        id: `Markdown:${src}`,
-        markdown: readTextFile(src),
-      }),
-    });
+    const pageContent = preprocessPageContentRule(
+      `PreprocessPageContent:${src}`,
+      markdownRule(`Markdown:${src}`, readTextFile(src)),
+    );
 
     for (const publicDir of publicDirs) {
       const dest = src.replace(/^pages/, publicDir).replace(/[.]md$/, ".html");
       writeTextFile(
         dest,
-        pageContent.then((o) => o.html),
+        pageContent.then(`PreprocessPageContentHtml:${src}`, (o) => o.html),
       );
     }
   }
 
   for (const src of findFiles("/styles")) {
-    const css = sassMacro(r, {
-      id: `Sass:${src}`,
-      sass: readTextFile(src),
-    });
+    const css = sassRule(`Sass:${src}`, readTextFile(src));
     for (const publicDir of publicDirs) {
       const dest = path.join(
         publicDir,
@@ -113,12 +107,15 @@ async function main() {
           break;
         }
         case "targetBuildEnd": {
-          if (e.result.status !== "ok") {
-            console.log(`Build ${e.result.status}: ${e.target.id}`);
-            if (e.result.status !== "skipped") {
-              console.log(e.result.logs.replaceAll(/^/gm, "\t"));
+          if (!e.cached && !e.obsolete) {
+            if (e.result.status !== "ok") {
+              console.log(`Build ${e.result.status}: ${e.target.id}`);
+              if (e.result.status !== "skipped") {
+                console.log(e.result.logs.replaceAll(/^/gm, "\t"));
+              }
             }
           }
+
           building--;
           stats[e.result.status]++;
 
@@ -132,7 +129,10 @@ async function main() {
 
             stats = emptyStats();
           }
+          break;
         }
+        default:
+          break;
       }
     });
   }

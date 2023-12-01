@@ -1,12 +1,8 @@
-import { targetMacro, type Target } from "../build/index.js";
+import { type Target, defineRule } from "../build/index.js";
 import { sassService } from "../services/sass.js";
 
-type SassMacroArgs = {
-  id: string;
-  sass: Target<string>;
-};
-const sassMacro = targetMacro(sassService, ({ sass }: SassMacroArgs) =>
-  sass.tryBuild(),
+const sassRule = defineRule(sassService, (sass: Target<string>, { tryBuild }) =>
+  tryBuild(sass),
 );
 
-export { sassMacro };
+export { sassRule };

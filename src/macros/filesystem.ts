@@ -3,11 +3,7 @@ import pathlib from "node:path";
 
 import chokidar from "chokidar";
 
-import {
-  copyFileMacro,
-  readTextFileMacro,
-  writeTextFileMacro,
-} from "./file.js";
+import { copyFileRule, readTextFileRule, writeTextFileRule } from "./file.js";
 
 import type { Runner, Target } from "../build/index.js";
 import type { FileAllow } from "../services/file.js";
@@ -36,7 +32,7 @@ type FilesystemMacroReturn = {
 };
 
 function filesystem(
-  r: Runner,
+  runner: Runner,
   args: FilesystemMacroArgs,
 ): FilesystemMacroReturn {
   const { projectRoot } = args;
@@ -83,8 +79,7 @@ function filesystem(
 
   const copyFile: FilesystemMacroReturn["copyFile"] = (src, dest) => {
     const id = `CopyFile:${dest}`;
-    const target = copyFileMacro(r, {
-      id,
+    const target = copyFileRule(id, {
       allow,
       src: toAbsolutePath(src),
       dest: toAbsolutePath(dest),
@@ -96,8 +91,7 @@ function filesystem(
 
   const readTextFile: FilesystemMacroReturn["readTextFile"] = (path) => {
     const id = `ReadTextFile:${path}`;
-    const target = readTextFileMacro(r, {
-      id,
+    const target = readTextFileRule(id, {
       allow,
       path: toAbsolutePath(path),
     });
@@ -110,8 +104,7 @@ function filesystem(
     data,
   ) => {
     const id = `WriteTextFile:${path}`;
-    const target = writeTextFileMacro(r, {
-      id,
+    const target = writeTextFileRule(id, {
       allow,
       path: toAbsolutePath(path),
       data,
@@ -123,7 +116,7 @@ function filesystem(
   const buildFiles: FilesystemMacroReturn["buildFiles"] = async () => {
     await Promise.allSettled(
       Array.from(writingTargets.values()).flatMap((ts) =>
-        ts.map((t) => t.build()),
+        ts.map((t) => runner.build(t)),
       ),
     );
   };
@@ -159,7 +152,7 @@ function filesystem(
           type === "change" &&
           (targets = readingTargets.get(path)) !== undefined
         ) {
-          await Promise.allSettled(targets.map((t) => t.reset()));
+          await Promise.allSettled(targets.map((t) => runner.reset(t)));
         } else {
           break outer;
         }

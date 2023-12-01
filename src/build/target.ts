@@ -1,105 +1,128 @@
-import type { Runner } from "./runner.js";
+import {
+  identityService,
+  type Service,
+  type ServiceResult,
+} from "./service.js";
+
 import type { Serializable } from "./serializable.js";
-import type { ServiceDefinition, ServiceResult } from "./service.js";
-
-type TargetResult<O> = ServiceResult<O> | { status: "skipped"; logs: string };
-
-type TargetThenOptions = {
-  pure?: boolean;
-};
 
 type Target<out O extends Serializable = Serializable> = {
   readonly id: string;
-  reset(): Promise<void>;
-  build(): Promise<TargetResult<O>>;
-  tryBuild(): Promise<O>;
   then<P extends Serializable>(
+    id: string,
     callback: (value: O) => P,
-    options?: TargetThenOptions,
   ): Target<P>;
+  readonly _TARGET_TYPE_ONLY?: () => O;
 };
 
+type TargetResult<O extends Serializable> =
+  | ServiceResult<O>
+  | { status: "skipped"; logs: string };
+
+type TryBuildRestReturn<T extends readonly Target[]> = T extends readonly [
+  Target<infer O>,
+  ...infer R extends readonly [],
+]
+  ? [O, ...TryBuildRestReturn<R>]
+  : [];
+
+type TryBuildObjectReturn<T extends { readonly [k: string]: Target }> = {
+  [K in keyof T]: T[K] extends Target<infer O> ? O : never;
+};
+
+type TargetBuildInputContext = {
+  tryBuild: {
+    <O extends Serializable>(target: Target<O>): Promise<O>;
+    <T extends readonly Target[]>(targets: T): Promise<TryBuildRestReturn<T>>;
+    <T extends { readonly [k: string]: Target }>(
+      targets: T,
+    ): Promise<TryBuildObjectReturn<T>>;
+  };
+  // TODO: add non-try variants?
+  // TODO: add logging?
+};
+
+type TargetResetInputContext = Record<string, never>;
+
 type TargetDefinition<
-  in out A,
+  in out C,
   in out I extends Serializable,
   out O extends Serializable,
   in out J extends Serializable,
 > = {
   readonly id: string;
-  readonly args: A;
-  readonly buildService: ServiceDefinition<I, O>;
-  readonly buildInputs: (args: A) => I | Promise<I>;
-  readonly resetService: ServiceDefinition<J, Serializable>;
-  readonly resetInputs: (args: A) => J | Promise<J>;
-};
+  readonly config: C;
 
-type Macro<A, R> = (r: Runner, args: A) => R;
-
-function macroCompose<A, R, B extends readonly unknown[]>(
-  macro: Macro<A, R>,
-  transform: (...beforeArgs: B) => A,
-): (r: Runner, ...beforeArgs: B) => R {
-  return (r, ...beforeArgs) => macro(r, transform(...beforeArgs));
-}
-
-function targetMacro<
-  A extends { readonly id: string },
-  I extends Serializable,
-  O extends Serializable,
->(
-  buildService: ServiceDefinition<I, O>,
-  buildArgs: (args: A) => I | Promise<I>,
-): (r: Runner, args: A) => Target<O>;
-
-function targetMacro<
-  A extends { readonly id: string },
-  I extends Serializable,
-  O extends Serializable,
-  J extends Serializable,
->(
-  buildService: ServiceDefinition<I, O>,
-  buildArgs: (args: A) => I | Promise<I>,
-  resetService: ServiceDefinition<J, Serializable>,
-  resetArgs: (args: A) => J | Promise<J>,
-): (r: Runner, args: A) => Target<O>;
-
-function targetMacro<
-  A extends { readonly id: string },
-  I extends Serializable,
-  O extends Serializable,
-  J extends Serializable,
->(
-  buildService: ServiceDefinition<I, O>,
-  buildArgs: (args: A) => I | Promise<I>,
-  resetService?: ServiceDefinition<J, Serializable>,
-  resetArgs?: (args: A) => J | Promise<J>,
-): (r: Runner, args: A) => Target<O> {
-  return (r, args) => {
-    const targetDefinition: TargetDefinition<A, I, O, J> = {
-      id: args.id,
-      args,
-      buildService,
-      buildInputs: buildArgs,
-      resetService:
-        resetService ??
-        (noOpServiceDefinition as ServiceDefinition<J, Serializable>),
-      resetInputs: resetArgs ?? ((() => null) as () => J),
-    };
-    return r.target(targetDefinition);
+  readonly build: {
+    readonly service: Service<I, O>;
+    readonly input: (
+      config: C,
+      context: TargetBuildInputContext,
+    ) => I | Promise<I>;
   };
+
+  readonly reset?:
+    | {
+        readonly service: Service<J, Serializable>;
+        readonly input: (
+          config: C,
+          context: TargetResetInputContext,
+        ) => J | Promise<J>;
+      }
+    | undefined;
+};
+
+class TargetInstance<
+  in out C,
+  in out I extends Serializable,
+  out O extends Serializable,
+  in out J extends Serializable,
+> implements Target<O>
+{
+  readonly id: string;
+  readonly config: C;
+  readonly build: TargetDefinition<C, I, O, J>["build"];
+  readonly reset: TargetDefinition<C, I, O, J>["reset"] | undefined;
+
+  constructor(definition: TargetDefinition<C, I, O, J>) {
+    this.id = definition.id;
+    this.config = definition.config;
+    this.build = definition.build;
+    this.reset = definition.reset;
+  }
+
+  then<P extends Serializable>(
+    id: string,
+    callback: (value: O) => P,
+  ): Target<P> {
+    return defineTarget({
+      id,
+      config: this,
+      build: {
+        service: identityService(),
+        input: async (target, { tryBuild }) => callback(await tryBuild(target)),
+      },
+    });
+  }
 }
 
-const noOpServiceDefinition: ServiceDefinition<null, null> = {
-  id: "NoOp",
-  pure: true,
-  call: () => null,
-};
+function defineTarget<
+  C,
+  I extends Serializable,
+  O extends Serializable,
+  J extends Serializable,
+>(definition: TargetDefinition<C, I, O, J>): Target<O> {
+  return new TargetInstance(definition);
+}
 
 export {
   type Target,
   type TargetDefinition,
+  type TargetBuildInputContext,
+  type TargetResetInputContext,
   type TargetResult,
-  type TargetThenOptions,
-  targetMacro,
-  macroCompose,
+  type TryBuildObjectReturn,
+  type TryBuildRestReturn,
+  defineTarget,
+  TargetInstance,
 };

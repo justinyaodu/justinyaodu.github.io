@@ -1,13 +1,9 @@
-import { targetMacro, type Target } from "../build/index.js";
+import { type Target, defineRule } from "../build/index.js";
 import { markdownService } from "../services/markdown.js";
 
-type MarkdownMacroArgs = {
-  id: string;
-  markdown: Target<string>;
-};
-const markdownMacro = targetMacro(
+const markdownRule = defineRule(
   markdownService,
-  ({ markdown }: MarkdownMacroArgs) => markdown.tryBuild(),
+  (markdown: Target<string>, { tryBuild }) => tryBuild(markdown),
 );
 
-export { markdownMacro };
+export { markdownRule };

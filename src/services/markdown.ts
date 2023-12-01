@@ -1,14 +1,14 @@
 import { Parser, HtmlRenderer } from "commonmark";
 
-import type { ServiceDefinition } from "../build/service.js";
+import { defineService } from "../build/service.js";
 
 const parser = new Parser({ smart: true });
 const renderer = new HtmlRenderer({ safe: false });
 
-const markdownService: ServiceDefinition<string, string> = {
+const markdownService = defineService<string, string>({
   id: "Markdown",
   pure: true,
-  call: ({ args: source }) => renderer.render(parser.parse(source)),
-};
+  run: (markdown) => renderer.render(parser.parse(markdown)),
+});
 
 export { markdownService };

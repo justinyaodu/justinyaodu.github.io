@@ -1,4 +1,4 @@
-import { targetMacro, type Target } from "../build/index.js";
+import { type Target, defineRule } from "../build/index.js";
 import {
   readTextFileService,
   writeTextFileService,
@@ -9,42 +9,38 @@ import {
   type FileReadAllow,
 } from "../services/file.js";
 
-type CopyFileMacroArgs = {
-  id: string;
+type CopyFileTargetConfig = {
   allow: FileAllow;
   src: string;
   dest: string;
 };
-const copyFileMacro = targetMacro(
+const copyFileRule = defineRule(
   copyFileService,
-  ({ allow, src, dest }: CopyFileMacroArgs) => ({ allow, src, dest }),
+  (config: CopyFileTargetConfig) => config,
 );
 
-type ReadTextFileMacroArgs = {
-  id: string;
+type ReadTextFileTargetConfig = {
   allow: FileReadAllow;
   path: string;
 };
-const readTextFileMacro = targetMacro(
+const readTextFileRule = defineRule(
   readTextFileService,
-  ({ allow, path }: ReadTextFileMacroArgs) => ({ allow, path }),
+  (config: ReadTextFileTargetConfig) => config,
 );
 
-type WriteTextFileMacroArgs = {
-  id: string;
+type WriteTextFileTargetConfig = {
   allow: FileWriteAllow;
   path: string;
   data: Target<string>;
 };
-const writeTextFileMacro = targetMacro(
+const writeTextFileRule = defineRule(
   writeTextFileService,
-  async ({ allow, path, data }: WriteTextFileMacroArgs) => ({
-    allow,
-    path,
-    data: await data.tryBuild(),
+  async ({ data, ...rest }: WriteTextFileTargetConfig, { tryBuild }) => ({
+    data: await tryBuild(data),
+    ...rest,
   }),
   deleteFileService,
   ({ allow, path }) => ({ allow, path }),
 );
 
-export { copyFileMacro, readTextFileMacro, writeTextFileMacro };
+export { copyFileRule, readTextFileRule, writeTextFileRule };

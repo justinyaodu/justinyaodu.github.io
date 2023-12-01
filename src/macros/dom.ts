@@ -1,13 +1,9 @@
-import { targetMacro, type Target } from "../build/index.js";
+import { type Target, defineRule } from "../build/index.js";
 import { preprocessPageContentService } from "../services/dom.js";
 
-type PreprocessPageContentMacroArgs = {
-  id: string;
-  html: Target<string>;
-};
-const preprocessPageContentMacro = targetMacro(
+const preprocessPageContentRule = defineRule(
   preprocessPageContentService,
-  ({ html }: PreprocessPageContentMacroArgs) => html.tryBuild(),
+  (html: Target<string>, { tryBuild }) => tryBuild(html),
 );
 
-export { preprocessPageContentMacro };
+export { preprocessPageContentRule };
