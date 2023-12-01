@@ -1,11 +1,11 @@
 import path from "node:path";
 import url from "node:url";
 
-import { defineRule, defineService, runner } from "./build/index.js";
-import { preprocessPageContentRule } from "./macros/dom.js";
-import { filesystem } from "./macros/filesystem.js";
-import { markdownRule } from "./macros/markdown.js";
-import { sassRule } from "./macros/sass.js";
+import { runner } from "./build/index.js";
+import { filesystemMacro } from "./macros/filesystem.js";
+import { preprocessPageContentRule } from "./rules/dom.js";
+import { markdownRule } from "./rules/markdown.js";
+import { sassRule } from "./rules/sass.js";
 
 // https://blog.logrocket.com/alternatives-dirname-node-js-es-modules/
 const __filename = url.fileURLToPath(import.meta.url);
@@ -17,7 +17,7 @@ async function main() {
   const publicDirs = ["public"];
 
   const { findFiles, copyFile, readTextFile, writeTextFile, watchFiles } =
-    filesystem(r, {
+    filesystemMacro(r, {
       projectRoot,
       readPathPrefixes: [
         "layouts",

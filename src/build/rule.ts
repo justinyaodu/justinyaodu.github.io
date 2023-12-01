@@ -10,6 +10,11 @@ import type { Service } from "./service.js";
 
 type Rule<C, O extends Serializable> = (id: string, config: C) => Target<O>;
 
+function defineRule<I extends Serializable, O extends Serializable>(
+  buildService: Service<I, O>,
+  buildInput: (config: I, context: TargetBuildInputContext) => I | Promise<I>,
+): Rule<I, O>;
+
 function defineRule<C, I extends Serializable, O extends Serializable>(
   buildService: Service<I, O>,
   buildInput: (config: C, context: TargetBuildInputContext) => I | Promise<I>,

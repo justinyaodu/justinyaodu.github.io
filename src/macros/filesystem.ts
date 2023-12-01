@@ -3,7 +3,11 @@ import pathlib from "node:path";
 
 import chokidar from "chokidar";
 
-import { copyFileRule, readTextFileRule, writeTextFileRule } from "./file.js";
+import {
+  copyFileRule,
+  readTextFileRule,
+  writeTextFileRule,
+} from "../rules/file.js";
 
 import type { Runner, Target } from "../build/index.js";
 import type { FileAllow } from "../services/file.js";
@@ -31,7 +35,7 @@ type FilesystemMacroReturn = {
   watchFiles: () => Promise<void>;
 };
 
-function filesystem(
+function filesystemMacro(
   runner: Runner,
   args: FilesystemMacroArgs,
 ): FilesystemMacroReturn {
@@ -176,4 +180,8 @@ function filesystem(
   };
 }
 
-export { type FilesystemMacroArgs, type FilesystemMacroReturn, filesystem };
+export {
+  type FilesystemMacroArgs,
+  type FilesystemMacroReturn,
+  filesystemMacro,
+};

@@ -5,11 +5,24 @@ type Service<in I extends Serializable, out O extends Serializable> = {
   readonly _SERVICE_TYPE_ONLY?: (input: I) => O;
 };
 
+type ServiceInput<S extends Service<any, any>> = S extends Service<
+  infer I,
+  infer _
+>
+  ? I
+  : never;
+type ServiceOutput<S extends Service<any, any>> = S extends Service<
+  infer _,
+  infer O
+>
+  ? O
+  : never;
+
 type ServiceResult<O extends Serializable> =
   | { status: "ok" | "warned"; value: O; logs: string }
   | { status: "failed"; logs: string };
 
-type ServiceRunContext<I extends Serializable> = {
+type ServiceRunContext = {
   readonly log: (...args: unknown[]) => void;
   readonly warn: (...args: unknown[]) => void;
   // readonly call: <J, P>(
@@ -25,7 +38,7 @@ type ServiceDefinition<
 > = {
   readonly id: string;
   readonly pure: boolean;
-  readonly run: (input: I, context: ServiceRunContext<I>) => O | Promise<O>;
+  readonly run: (input: I, context: ServiceRunContext) => O | Promise<O>;
 };
 
 class ServiceInstance<in I extends Serializable, out O extends Serializable>
@@ -33,7 +46,7 @@ class ServiceInstance<in I extends Serializable, out O extends Serializable>
 {
   readonly id: string;
   readonly pure: boolean;
-  readonly run: (input: I, context: ServiceRunContext<I>) => O | Promise<O>;
+  readonly run: (input: I, context: ServiceRunContext) => O | Promise<O>;
 
   constructor(definition: ServiceDefinition<I, O>) {
     this.id = definition.id;
@@ -71,6 +84,8 @@ function identityService<T extends Serializable>(): Service<T, T> {
 export {
   type Service,
   type ServiceDefinition,
+  type ServiceInput,
+  type ServiceOutput,
   type ServiceResult,
   type ServiceRunContext,
   defineService,

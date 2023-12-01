@@ -5,28 +5,11 @@ import {
   deleteFileService,
   copyFileService,
   type FileWriteAllow,
-  type FileAllow,
-  type FileReadAllow,
 } from "../services/file.js";
 
-type CopyFileTargetConfig = {
-  allow: FileAllow;
-  src: string;
-  dest: string;
-};
-const copyFileRule = defineRule(
-  copyFileService,
-  (config: CopyFileTargetConfig) => config,
-);
+const copyFileRule = defineRule(copyFileService, (config) => config);
 
-type ReadTextFileTargetConfig = {
-  allow: FileReadAllow;
-  path: string;
-};
-const readTextFileRule = defineRule(
-  readTextFileService,
-  (config: ReadTextFileTargetConfig) => config,
-);
+const readTextFileRule = defineRule(readTextFileService, (config) => config);
 
 type WriteTextFileTargetConfig = {
   allow: FileWriteAllow;
