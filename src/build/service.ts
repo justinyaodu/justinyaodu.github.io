@@ -11,6 +11,7 @@ type ServiceInput<S extends Service<any, any>> = S extends Service<
 >
   ? I
   : never;
+
 type ServiceOutput<S extends Service<any, any>> = S extends Service<
   infer _,
   infer O
@@ -52,16 +53,6 @@ class ServiceInstance<in I extends Serializable, out O extends Serializable>
     this.id = definition.id;
     this.pure = definition.pure;
     this.run = definition.run;
-  }
-
-  static cast<I extends Serializable, O extends Serializable>(
-    service: Service<I, O>,
-  ): ServiceInstance<I, O> {
-    if (service instanceof ServiceInstance) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return service;
-    }
-    throw new TypeError("Not a ServiceInstance");
   }
 }
 

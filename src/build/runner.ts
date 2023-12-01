@@ -1,19 +1,19 @@
 import util from "node:util";
 
-import { serialize, type Serializable } from "./serializable.js";
+import { type Serializable, serialize } from "./serializable.js";
 import {
-  ServiceInstance,
   type Service,
+  ServiceInstance,
   type ServiceResult,
 } from "./service.js";
 import {
   type Target,
-  type TargetResult,
+  type TargetBuildInputContext,
   TargetInstance,
+  type TargetResetInputContext,
+  type TargetResult,
   type TryBuildObjectReturn,
   type TryBuildRestReturn,
-  type TargetBuildInputContext,
-  type TargetResetInputContext,
 } from "./target.js";
 
 class TargetUnavailableError extends Error {

@@ -1,4 +1,4 @@
-import { Parser, HtmlRenderer } from "commonmark";
+import { HtmlRenderer, Parser } from "commonmark";
 
 import { PureTarget, Target, type TargetBuildArgs } from "./Target.js";
 

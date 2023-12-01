@@ -1,4 +1,4 @@
-import { Parser, HtmlRenderer } from "commonmark";
+import { HtmlRenderer, Parser } from "commonmark";
 
 import { defineService } from "../build/service.js";
 

@@ -1,15 +1,15 @@
 import { type Target, defineRule } from "../build/index.js";
 import {
+  type FileWriteAllow,
+  copyFileService,
+  deleteFileService,
   readTextFileService,
   writeTextFileService,
-  deleteFileService,
-  copyFileService,
-  type FileWriteAllow,
 } from "../services/file.js";
 
-const copyFileRule = defineRule(copyFileService, (config) => config);
+const copyFileRule = defineRule(copyFileService);
 
-const readTextFileRule = defineRule(readTextFileService, (config) => config);
+const readTextFileRule = defineRule(readTextFileService);
 
 type WriteTextFileTargetConfig = {
   allow: FileWriteAllow;

@@ -1,7 +1,7 @@
 import {
-  identityService,
   type Service,
   type ServiceResult,
+  identityService,
 } from "./service.js";
 
 import type { Serializable } from "./serializable.js";

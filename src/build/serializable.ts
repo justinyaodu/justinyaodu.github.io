@@ -14,4 +14,4 @@ function serialize(s: Serializable): string {
   return JSON.stringify(s);
 }
 
-export { type Serializable, serialize, deserialize };
+export { type Serializable, deserialize, serialize };

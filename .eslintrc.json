@@ -44,7 +44,7 @@
       }
     ],
     "object-shorthand": ["warn", "properties"],
-    "sort-imports": "off",
+    "sort-imports": ["warn", { "ignoreDeclarationSort": true }],
     "import/order": [
       "warn",
       {

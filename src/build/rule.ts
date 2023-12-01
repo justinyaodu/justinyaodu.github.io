@@ -1,8 +1,8 @@
 import {
-  defineTarget,
   type Target,
   type TargetBuildInputContext,
   type TargetResetInputContext,
+  defineTarget,
 } from "./target.js";
 
 import type { Serializable } from "./serializable.js";
@@ -12,7 +12,6 @@ type Rule<C, O extends Serializable> = (id: string, config: C) => Target<O>;
 
 function defineRule<I extends Serializable, O extends Serializable>(
   buildService: Service<I, O>,
-  buildInput: (config: I, context: TargetBuildInputContext) => I | Promise<I>,
 ): Rule<I, O>;
 
 function defineRule<C, I extends Serializable, O extends Serializable>(
@@ -39,7 +38,7 @@ function defineRule<
   J extends Serializable,
 >(
   buildService: Service<I, O>,
-  buildInput: (config: C, context: TargetBuildInputContext) => I | Promise<I>,
+  buildInput?: (config: C, context: TargetBuildInputContext) => I | Promise<I>,
   resetService?: Service<J, O>,
   resetInput?: (config: C, context: TargetResetInputContext) => J | Promise<J>,
 ): Rule<C, O> {
@@ -49,7 +48,7 @@ function defineRule<
       config,
       build: {
         service: buildService,
-        input: buildInput,
+        input: buildInput ?? ((c: C) => c as unknown as I),
       },
       reset:
         resetService && resetInput

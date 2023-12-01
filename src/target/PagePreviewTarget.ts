@@ -5,9 +5,9 @@ import { HighlightService } from "../service/HighlightService.js";
 import { MathService } from "../service/MathService.js";
 
 import {
+  type InputTargets,
   PureTarget,
   type TargetBuildArgs,
-  type InputTargets,
 } from "./Target.js";
 
 const highlightService = new HighlightService();

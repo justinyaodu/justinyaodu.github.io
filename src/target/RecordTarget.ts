@@ -1,8 +1,8 @@
 import {
-  PureTarget,
   type InputTargets,
-  type TargetOutput,
+  PureTarget,
   type TargetBuildArgs,
+  type TargetOutput,
 } from "./Target.js";
 
 class RecordTarget<T extends TargetOutput> extends PureTarget<
