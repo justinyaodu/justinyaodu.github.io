@@ -1,5 +1,7 @@
-import { type Target, defineRule } from "../build/index.js";
+import { defineRule } from "../build/index.js";
 import { markdownService } from "../services/markdown.js";
+
+import type { Target } from "../build/index.js";
 
 const markdownRule = defineRule(
   markdownService,

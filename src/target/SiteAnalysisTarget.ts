@@ -1,8 +1,9 @@
 import { JSDOM } from "jsdom";
 
-import { PureTarget, type TargetBuildArgs } from "./Target.js";
+import { PureTarget } from "./Target.js";
 
 import type { RecordTarget } from "./RecordTarget.js";
+import type { TargetBuildArgs } from "./Target.js";
 
 type SiteAnalysisTargetArgs = { pages: Record<string, string> };
 class SiteAnalysisTarget extends PureTarget<SiteAnalysisTargetArgs, undefined> {

@@ -1,10 +1,7 @@
-import {
-  type Service,
-  type ServiceResult,
-  identityService,
-} from "./service.js";
+import { identityService } from "./service.js";
 
 import type { Serializable } from "./serializable.js";
+import type { Service, ServiceResult } from "./service.js";
 
 type Target<out O extends Serializable = Serializable> = {
   readonly id: string;
@@ -26,7 +23,7 @@ type TryBuildRestReturn<T extends readonly Target[]> = T extends readonly [
   ? [O, ...TryBuildRestReturn<R>]
   : [];
 
-type TryBuildObjectReturn<T extends { readonly [k: string]: Target }> = {
+type TryBuildObjectReturn<T extends Readonly<Record<string, Target>>> = {
   [K in keyof T]: T[K] extends Target<infer O> ? O : never;
 };
 
@@ -34,7 +31,7 @@ type TargetBuildInputContext = {
   tryBuild: {
     <O extends Serializable>(target: Target<O>): Promise<O>;
     <T extends readonly Target[]>(targets: T): Promise<TryBuildRestReturn<T>>;
-    <T extends { readonly [k: string]: Target }>(
+    <T extends Readonly<Record<string, Target>>>(
       targets: T,
     ): Promise<TryBuildObjectReturn<T>>;
   };

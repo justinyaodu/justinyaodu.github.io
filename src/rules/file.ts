@@ -1,11 +1,13 @@
-import { type Target, defineRule } from "../build/index.js";
+import { defineRule } from "../build/index.js";
 import {
-  type FileWriteAllow,
   copyFileService,
   deleteFileService,
   readTextFileService,
   writeTextFileService,
 } from "../services/file.js";
+
+import type { Target } from "../build/index.js";
+import type { FileWriteAllow } from "../services/file.js";
 
 const copyFileRule = defineRule(copyFileService);
 

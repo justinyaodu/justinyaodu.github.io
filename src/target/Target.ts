@@ -21,7 +21,7 @@ abstract class Target<
   I extends Record<string, TargetOutput> = never,
   O extends TargetOutput = TargetOutput,
 > {
-  static instancesByKey: Map<string, Target> = new Map();
+  static instancesByKey = new Map<string, Target>();
 
   protected readonly buildIsPureFunction: boolean = false;
 
@@ -175,7 +175,7 @@ abstract class PureTarget<
 > extends Target<I, O> {
   protected override readonly buildIsPureFunction = true;
 
-  private readonly cachedInputVersions: Map<string, number> = new Map();
+  private readonly cachedInputVersions = new Map<string, number>();
 
   protected override isStillFresh(): boolean {
     for (const [name, target] of Object.entries(this.inputTargets)) {

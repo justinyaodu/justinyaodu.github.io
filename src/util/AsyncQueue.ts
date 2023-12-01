@@ -44,7 +44,7 @@ class AsyncQueue<T> implements AsyncIterableIterator<T> {
     } else if (this.closed) {
       return { done: true, value: undefined };
     } else {
-      const promise: Promise<{ value: T }> = new Promise((resolve) => {
+      const promise = new Promise<{ value: T }>((resolve) => {
         this.resolveQueue.set(index, resolve);
       });
       return promise;

@@ -128,7 +128,7 @@ function filesystemMacro(
   const watchFiles: FilesystemMacroReturn["watchFiles"] = async () => {
     let events: { type: string; path: string }[] = [];
     let eventsNonEmptyResolve: () => void;
-    let eventsNonEmptyPromise: Promise<void> = new Promise(
+    let eventsNonEmptyPromise = new Promise<void>(
       (res) => (eventsNonEmptyResolve = res),
     );
 

@@ -1,12 +1,12 @@
-import {
-  type Target,
-  type TargetBuildInputContext,
-  type TargetResetInputContext,
-  defineTarget,
-} from "./target.js";
+import { defineTarget } from "./target.js";
 
 import type { Serializable } from "./serializable.js";
 import type { Service } from "./service.js";
+import type {
+  Target,
+  TargetBuildInputContext,
+  TargetResetInputContext,
+} from "./target.js";
 
 type Rule<C, O extends Serializable> = (id: string, config: C) => Target<O>;
 

@@ -4,11 +4,9 @@ import { JSDOM } from "jsdom";
 import { HighlightService } from "../service/HighlightService.js";
 import { MathService } from "../service/MathService.js";
 
-import {
-  type InputTargets,
-  PureTarget,
-  type TargetBuildArgs,
-} from "./Target.js";
+import { PureTarget } from "./Target.js";
+
+import type { InputTargets, TargetBuildArgs } from "./Target.js";
 
 const highlightService = new HighlightService();
 const mathService = new MathService();

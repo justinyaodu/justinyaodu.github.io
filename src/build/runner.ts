@@ -1,19 +1,18 @@
 import util from "node:util";
 
-import { type Serializable, serialize } from "./serializable.js";
-import {
-  type Service,
-  ServiceInstance,
-  type ServiceResult,
-} from "./service.js";
-import {
-  type Target,
-  type TargetBuildInputContext,
-  TargetInstance,
-  type TargetResetInputContext,
-  type TargetResult,
-  type TryBuildObjectReturn,
-  type TryBuildRestReturn,
+import { serialize } from "./serializable.js";
+import { ServiceInstance } from "./service.js";
+import { TargetInstance } from "./target.js";
+
+import type { Serializable } from "./serializable.js";
+import type { Service, ServiceResult } from "./service.js";
+import type {
+  Target,
+  TargetBuildInputContext,
+  TargetResetInputContext,
+  TargetResult,
+  TryBuildObjectReturn,
+  TryBuildRestReturn,
 } from "./target.js";
 
 class TargetUnavailableError extends Error {
@@ -44,7 +43,7 @@ type Runner = {
   tryBuild<T extends readonly Target[]>(
     targets: T,
   ): Promise<TryBuildRestReturn<T>>;
-  tryBuild<T extends { readonly [k: string]: Target }>(
+  tryBuild<T extends Readonly<Record<string, Target>>>(
     targets: T,
   ): Promise<TryBuildObjectReturn<T>>;
 
@@ -453,9 +452,9 @@ class LocalRunner implements Runner {
     usedCache: boolean;
   }> {
     const tryBuild: (
-      t: Target | Target[] | { readonly [k: string]: Target },
+      t: Target | Target[] | Readonly<Record<string, Target>>,
     ) => Promise<
-      Serializable | Serializable[] | { [k: string]: Serializable }
+      Serializable | Serializable[] | Record<string, Serializable>
     > = (t) =>
       this._tryBuildWithCallback(t, (dependency) => {
         this._targetDependents
@@ -556,20 +555,20 @@ class LocalRunner implements Runner {
     targets: T,
   ): Promise<TryBuildRestReturn<T>>;
 
-  tryBuild<T extends { readonly [k: string]: Target }>(
+  tryBuild<T extends Readonly<Record<string, Target>>>(
     targets: T,
   ): Promise<TryBuildObjectReturn<T>>;
 
   async tryBuild(
-    t: Target | readonly Target[] | { readonly [k: string]: Target },
-  ): Promise<Serializable | Serializable[] | { [k: string]: Serializable }> {
+    t: Target | readonly Target[] | Readonly<Record<string, Target>>,
+  ): Promise<Serializable | Serializable[] | Record<string, Serializable>> {
     return this._tryBuildWithCallback(t);
   }
 
   async _tryBuildWithCallback(
-    t: Target | readonly Target[] | { readonly [k: string]: Target },
+    t: Target | readonly Target[] | Readonly<Record<string, Target>>,
     callback?: (t: Target) => void,
-  ): Promise<Serializable | Serializable[] | { [k: string]: Serializable }> {
+  ): Promise<Serializable | Serializable[] | Record<string, Serializable>> {
     if ("id" in t && typeof t.id === "string") {
       const target = t as Target;
       const result = await this.build(target);
