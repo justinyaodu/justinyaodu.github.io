@@ -1,8 +1,8 @@
 class AsyncQueue<T> implements AsyncIterableIterator<T> {
   private closed: boolean;
-  private dataQueue: Map<number, T>;
+  private readonly dataQueue: Map<number, T>;
   private dataQueueIndex: number;
-  private resolveQueue: Map<number, (arg: { value: T }) => void>;
+  private readonly resolveQueue: Map<number, (arg: { value: T }) => void>;
   private resolveQueueIndex: number;
 
   constructor() {

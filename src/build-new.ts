@@ -121,7 +121,7 @@ async function main() {
 
           if (building === 0) {
             const summary = Object.entries(stats)
-              .filter((pair) => pair[1] > 0)
+              .filter(([_, count]) => count > 0)
               .map(([status, count]) => `${count} ${status}`)
               .join(", ");
             const elapsedMs = e.timestampMs - startTimestampMs;

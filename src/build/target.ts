@@ -92,6 +92,7 @@ class TargetInstance<
     id: string,
     callback: (value: O) => P,
   ): Target<P> {
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
     return defineTarget({
       id,
       config: this,

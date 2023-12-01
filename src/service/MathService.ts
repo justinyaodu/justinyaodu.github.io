@@ -4,7 +4,7 @@ import { HistoryCache } from "../util/HistoryCache.js";
 import { Result } from "../util/Result.js";
 
 class MathService {
-  private cache: HistoryCache<string, Result<string, unknown>>;
+  private readonly cache: HistoryCache<string, Result<string, unknown>>;
 
   constructor() {
     this.cache = new HistoryCache(10);

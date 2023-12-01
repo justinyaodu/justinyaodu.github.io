@@ -124,14 +124,17 @@ type TargetState<O extends Serializable> =
     };
 
 class LocalRunner implements Runner {
-  private _listeners: {
+  private readonly _listeners: {
     type: "all" | RunnerEvent["type"];
     listener: (event: RunnerEvent) => void;
   }[] = [];
-  private _services = new Map<string, ServiceInstance<any, any>>();
-  private _targets = new Map<string, TargetInstance<any, any, any, any>>();
-  private _targetStates = new Map<string, TargetState<Serializable>>();
-  private _targetDependents = new Map<
+  private readonly _services = new Map<string, ServiceInstance<any, any>>();
+  private readonly _targets = new Map<
+    string,
+    TargetInstance<any, any, any, any>
+  >();
+  private readonly _targetStates = new Map<string, TargetState<Serializable>>();
+  private readonly _targetDependents = new Map<
     string,
     Set<TargetInstance<any, any, any, any>>
   >();
@@ -409,6 +412,7 @@ class LocalRunner implements Runner {
         result: resetResult,
       });
 
+      // eslint-disable-next-line @typescript-eslint/no-use-before-define
       await resetDependents;
 
       return resetResult;

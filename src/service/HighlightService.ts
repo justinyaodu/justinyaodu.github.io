@@ -5,7 +5,7 @@ import { HistoryCache } from "../util/HistoryCache.js";
 const highlighter = await getHighlighter({ theme: "solarized-light" });
 
 class HighlightService {
-  private cache: HistoryCache<string, string>;
+  private readonly cache: HistoryCache<string, string>;
 
   constructor() {
     this.cache = new HistoryCache(10);

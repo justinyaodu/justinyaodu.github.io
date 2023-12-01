@@ -5,8 +5,8 @@ class AsyncBatcher<T> implements AsyncIterableIterator<T[]> {
   private promise: Promise<IteratorResult<T>>;
 
   constructor(
-    private source: AsyncIterator<T>,
-    private batchIntervalMs: number,
+    private readonly source: AsyncIterator<T>,
+    private readonly batchIntervalMs: number,
   ) {
     this.done = false;
     this.promise = source.next();
