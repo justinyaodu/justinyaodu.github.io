@@ -99,6 +99,7 @@ $main-max-width-factor: 42;
       }
     }
 
+    header,
     ul,
     ol,
     li {
@@ -128,6 +129,10 @@ $main-max-width-factor: 42;
       ol {
         list-style: lower-alpha;
       }
+    }
+
+    header {
+      font-weight: 300;
     }
 
     h1,

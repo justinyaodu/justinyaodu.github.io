@@ -3,7 +3,7 @@ import url from "node:url";
 
 import { runner } from "./build/index.js";
 import { filesystemMacro } from "./macros/filesystem.js";
-import { preprocessPageContentRule } from "./rules/dom.js";
+import { applyPageLayoutRule, preprocessPageContentRule } from "./rules/dom.js";
 import { markdownRule } from "./rules/markdown.js";
 import { sassRule } from "./rules/sass.js";
 
@@ -30,6 +30,8 @@ async function main() {
       watchPathPrefixes: ["src"],
     });
 
+  const layoutHtml = readTextFile("layouts/page.html");
+
   for (const src of findFiles("pages")) {
     const pageContent = preprocessPageContentRule(
       `PreprocessPageContent:${src}`,
@@ -40,7 +42,10 @@ async function main() {
       const dest = src.replace(/^pages/, publicDir).replace(/[.]md$/, ".html");
       writeTextFile(
         dest,
-        pageContent.then(`PreprocessPageContentHtml:${src}`, (o) => o.html),
+        applyPageLayoutRule(`ApplyPageLayout:${src}`, {
+          layoutHtml,
+          pageContent,
+        }),
       );
     }
   }

@@ -79,6 +79,7 @@ type RawRunnerEvent =
       readonly result: TargetResult<Serializable>;
       readonly obsolete: boolean;
       readonly cached: boolean;
+      // TODO: startToEndMs and callToEndMs?
     };
 
 type RunnerEvent = RawRunnerEvent & {
@@ -569,7 +570,7 @@ class LocalRunner implements Runner {
     return this._tryBuildWithCallback(t);
   }
 
-  async _tryBuildWithCallback(
+  private async _tryBuildWithCallback(
     t: Target | readonly Target[] | Readonly<Record<string, Target>>,
     callback?: (t: Target) => void,
   ): Promise<Serializable | Serializable[] | Record<string, Serializable>> {

@@ -3,13 +3,14 @@ import { JSDOM } from "jsdom";
 
 import { defineService } from "../build/service.js";
 
-const preprocessPageContentService = defineService<
-  string,
-  {
-    html: string;
-    title: string | null;
-  }
->({
+type PageContent = {
+  html: string;
+  title: string | null;
+  date: string | null;
+  summaryHtml: string | null;
+};
+
+const preprocessPageContentService = defineService<string, PageContent>({
   id: "PreprocessPageContent",
   pure: true,
   run: (html, { warn }) => {
@@ -17,7 +18,51 @@ const preprocessPageContentService = defineService<
     const { window } = dom;
     const { document } = window;
 
-    const title = document.querySelector("h1")?.textContent ?? null;
+    const firstH1 = document.querySelector("h1");
+
+    const title = firstH1?.textContent ?? null;
+    if (title === null) {
+      warn("Page has no title.");
+    }
+
+    const summaryHtml = document.querySelector("p")?.innerHTML ?? null;
+
+    let date: string | null = null;
+    const metadataPre =
+      document.querySelector("pre > code.language-json")?.parentElement ?? null;
+    if (metadataPre !== null) {
+      const parsed: unknown = JSON.parse(metadataPre.textContent!);
+      if (typeof parsed === "object" && parsed !== null) {
+        if ("date" in parsed && typeof parsed.date === "string") {
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(parsed.date)) {
+            date = parsed.date;
+          } else {
+            warn("Date %s does not match regex %s.", parsed.date, dateRegex);
+          }
+        }
+      } else {
+        warn("Page metadata is not an object.");
+      }
+      metadataPre.remove();
+    }
+
+    if (firstH1) {
+      const header = document.createElement("header");
+      firstH1.replaceWith(header);
+      header.appendChild(firstH1);
+
+      if (date) {
+        const time = document.createElement("time");
+        time.dateTime = date;
+        time.textContent = date;
+
+        const p = document.createElement("p");
+        p.appendChild(time);
+
+        header.appendChild(p);
+      }
+    }
 
     for (const a of document.querySelectorAll("a")) {
       a.classList.add("link");
@@ -123,8 +168,34 @@ const preprocessPageContentService = defineService<
     return {
       html: dom.serialize(),
       title,
+      date,
+      summaryHtml,
     };
   },
 });
 
-export { preprocessPageContentService };
+const applyPageLayoutService = defineService<
+  { layoutHtml: string; pageContent: PageContent },
+  string
+>({
+  id: "ApplyPageLayout",
+  pure: true,
+  run: ({ layoutHtml, pageContent }) => {
+    const dom = new JSDOM(layoutHtml);
+    const { window } = dom;
+    const { document } = window;
+
+    document.querySelector("main")!.innerHTML = pageContent.html;
+
+    if (pageContent.title !== null) {
+      const title = document.createElement("title");
+      title.textContent = pageContent.title;
+      document.head.appendChild(title);
+    }
+
+    return dom.serialize();
+  },
+});
+
+export { preprocessPageContentService, applyPageLayoutService };
+export type { PageContent };
