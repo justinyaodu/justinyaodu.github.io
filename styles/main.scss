@@ -34,7 +34,7 @@ $main-max-width-factor: 42;
   :root {
     background: #fff;
     color: #000;
-    font-family: "Open Sans", sans-serif;
+    font-family: "Montserrat", sans-serif;
     font-weight: 400;
     line-height: 2;
   }
@@ -110,8 +110,10 @@ $main-max-width-factor: 42;
 
     ul,
     ol {
+      margin-left: $unit;
+
       & > li {
-        margin-left: $unit;
+        margin-left: 1.5em;
       }
     }
 
@@ -207,7 +209,7 @@ $main-max-width-factor: 42;
       padding: 0.125em 0.25em;
       background: $code-background;
       font-family: "Source Code Pro", monospace;
-      font-weight: 500;
+      font-weight: 400;
     }
 
     aside,

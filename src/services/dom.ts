@@ -3,6 +3,9 @@ import { JSDOM } from "jsdom";
 
 import { defineService } from "../build/service.js";
 
+import { highlightService } from "./highlight.js";
+import { mathService } from "./math.js";
+
 type PageContent = {
   html: string;
   title: string | null;
@@ -13,7 +16,7 @@ type PageContent = {
 const preprocessPageContentService = defineService<string, PageContent>({
   id: "PreprocessPageContent",
   pure: true,
-  run: (html, { warn }) => {
+  run: async (html, { warn, call }) => {
     const dom = new JSDOM(html);
     const { window } = dom;
     const { document } = window;
@@ -103,6 +106,7 @@ const preprocessPageContentService = defineService<string, PageContent>({
 
     for (const heading of document.querySelectorAll("h2, h3, h4, h5, h6")) {
       const id = slug(heading.textContent!);
+      heading.id = id;
       const a = document.createElement("a");
       a.href = `#${id}`;
       a.replaceChildren(...heading.childNodes);
@@ -163,6 +167,154 @@ const preprocessPageContentService = defineService<string, PageContent>({
 
       element.replaceChildren(...blockquote.childNodes);
       blockquote.replaceWith(element);
+    }
+
+    {
+      // Get all text nodes that aren't inside <code> tags.
+      const walker = document.createTreeWalker(
+        document.querySelector("body")!,
+        window.NodeFilter.SHOW_ALL,
+        (node) => {
+          if (node instanceof window.Element && node.tagName === "CODE") {
+            return window.NodeFilter.FILTER_REJECT;
+          }
+          if (node instanceof window.Text) {
+            return window.NodeFilter.FILTER_ACCEPT;
+          }
+          return window.NodeFilter.FILTER_SKIP;
+        },
+      );
+
+      const textNodes: Text[] = Array.from({
+        [Symbol.iterator]: function* () {
+          while (true) {
+            const node = walker.nextNode();
+            if (node === null) {
+              break;
+            }
+            if (node instanceof window.Text) {
+              yield node;
+            }
+          }
+        },
+      });
+
+      for (const textNode of textNodes) {
+        const inlineMathRegex = /[$]((?:[^$]|\\[$])+)[$]/g;
+        const texts = textNode.data.split(inlineMathRegex);
+
+        if (texts.length === 1) {
+          continue;
+        }
+
+        const tempNode = document.createElement("span");
+        for (let i = 0; i < texts.length; i++) {
+          const text = texts[i];
+          if (i % 2 === 0) {
+            tempNode.appendChild(document.createTextNode(text));
+          } else {
+            const result = await call(mathService, {
+              latex: text,
+              mode: "inline",
+            });
+            if ("value" in result) {
+              tempNode.innerHTML += result.value;
+            }
+            if (result.status !== "ok") {
+              warn(result.logs);
+            }
+            if (result.status === "failed") {
+              const errorNode = document.createElement("code");
+              errorNode.textContent = result.logs;
+              errorNode.style.color = "red";
+              tempNode.appendChild(errorNode);
+            }
+          }
+        }
+
+        textNode.replaceWith(tempNode);
+        tempNode.outerHTML = tempNode.innerHTML;
+      }
+    }
+
+    for (const code of document.querySelectorAll<HTMLPreElement>(
+      "pre > code.language-math",
+    )) {
+      const pre = code.parentElement!;
+      const result = await call(mathService, {
+        latex: code.textContent!,
+        mode: "display",
+      });
+      if ("value" in result) {
+        pre.outerHTML = result.value;
+      }
+      if (result.status !== "ok") {
+        warn(result.logs);
+      }
+      if (result.status === "failed") {
+        code.style.color = "red";
+        code.textContent = result.logs;
+      }
+    }
+
+    for (const code of document.querySelectorAll("code")) {
+      const inline = code.parentElement!.tagName !== "PRE";
+
+      let language, content;
+      if (inline) {
+        const parseLanguageRegex = /^!([^ ]+) (.*)$/;
+        const match = parseLanguageRegex.exec(code.textContent!);
+
+        if (match === null) {
+          continue;
+        }
+
+        language = match[1];
+        content = match[2];
+      } else {
+        const languages = Array.from(code.classList)
+          .filter((c) => c.startsWith("language-"))
+          .map((c) => c.replace(/^language-/, ""));
+
+        if (languages.length === 0) {
+          continue;
+        }
+
+        language = languages[0];
+        content = code.textContent!;
+
+        if (languages.length > 1) {
+          warn("Multiple language tags on code block.");
+        }
+      }
+
+      const result = await call(highlightService, {
+        code: content,
+        language,
+      });
+
+      if ("value" in result) {
+        code.innerHTML = result.value;
+        if (inline) {
+          code.replaceChildren(
+            ...code.children[0].children[0].children[0].childNodes,
+          );
+          // Array.from(code.querySelectorAll<HTMLElement>("[style]")).forEach(
+          //   (e) => {
+          //     if (e.style.fontWeight === "bold") {
+          //       e.style.fontWeight = "600";
+          //     }
+          //   }
+          // );
+        } else {
+          code.replaceChildren(...code.children[0].children[0].childNodes);
+          code.parentElement!.tabIndex = 0;
+        }
+      }
+
+      if (result.status !== "ok") {
+        warn(result.logs);
+      }
     }
 
     return {

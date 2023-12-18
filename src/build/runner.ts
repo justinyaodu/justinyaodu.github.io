@@ -5,7 +5,7 @@ import { ServiceInstance } from "./service.js";
 import { TargetInstance } from "./target.js";
 
 import type { Serializable } from "./serializable.js";
-import type { Service, ServiceResult } from "./service.js";
+import type { Service, ServiceResult, ServiceRunContext } from "./service.js";
 import type {
   Target,
   TargetBuildInputContext,
@@ -277,9 +277,34 @@ class LocalRunner implements Runner {
       warned = true;
     };
 
+    const call: ServiceRunContext["call"] = this.call.bind(this);
+
+    // eslint-disable-next-line @typescript-eslint/no-shadow
+    const tryCall: ServiceRunContext["tryCall"] = async (service, input) => {
+      const result = await this.call(service, input);
+      logs.push(result.logs);
+      switch (result.status) {
+        case "ok":
+          break;
+        case "warned":
+          warned = true;
+          break;
+        case "failed":
+          throw new Error(
+            `Call to service ${JSON.stringify(service.id)} failed.`,
+          );
+      }
+      return result.value;
+    };
+
     try {
       const serviceInstance = this._asServiceInstance(service);
-      const value = await serviceInstance.run(input, { log, warn });
+      const value = await serviceInstance.run(input, {
+        log,
+        warn,
+        call,
+        tryCall,
+      });
       return {
         status: warned ? "warned" : "ok",
         value,

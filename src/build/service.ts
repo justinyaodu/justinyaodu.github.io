@@ -26,11 +26,14 @@ type ServiceResult<O extends Serializable> =
 type ServiceRunContext = {
   readonly log: (...args: unknown[]) => void;
   readonly warn: (...args: unknown[]) => void;
-  // readonly call: <J, P>(
-  //   service: Service<J, P>,
-  //   input: J
-  // ) => Promise<ServiceResult<P>>;
-  // readonly tryCall: <J, P>(service: Service<J, P>, input: J) => Promise<P>;
+  readonly call: <I extends Serializable, O extends Serializable>(
+    service: Service<I, O>,
+    input: I,
+  ) => Promise<ServiceResult<O>>;
+  readonly tryCall: <I extends Serializable, O extends Serializable>(
+    service: Service<I, O>,
+    input: I,
+  ) => Promise<O>;
 };
 
 type ServiceDefinition<
