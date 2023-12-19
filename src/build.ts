@@ -1,159 +1,165 @@
 import path from "node:path";
-import process from "node:process";
+import url from "node:url";
 
-import { FileCopyTarget } from "./target/FileCopyTarget.js";
-import {
-  BinaryFileInputTarget,
-  FileInputTarget,
-  TextFileInputTarget,
-} from "./target/FileInputTarget.js";
-import { FileOutputTarget } from "./target/FileOutputTarget.js";
-import { MarkdownTarget } from "./target/MarkdownTarget.js";
-import { PagePreviewTarget } from "./target/PagePreviewTarget.js";
-import { RecordTarget } from "./target/RecordTarget.js";
-import { SassTarget } from "./target/SassTarget.js";
-import { SiteAnalysisTarget } from "./target/SiteAnalysisTarget.js";
-import { Target } from "./target/Target.js";
-import { chokidarEventStream, findFiles } from "./util/filesystem.js";
+import { runner } from "./build/index.js";
+import { filesystemMacro } from "./macros/filesystem.js";
+import { applyPageLayoutRule, preprocessPageContentRule } from "./rules/dom.js";
+import { markdownRule } from "./rules/markdown.js";
+import { sassRule } from "./rules/sass.js";
 
-const publicDirs = ["/public", "/public-preview"];
+// https://blog.logrocket.com/alternatives-dirname-node-js-es-modules/
+const __filename = url.fileURLToPath(import.meta.url);
+const projectRoot = path.dirname(path.dirname(__filename));
 
-const pathsToWatch = [
-  "/layouts",
-  "/pages",
-  "/node_modules/katex/dist",
-  "/src",
-  "/static",
-  "/styles",
-];
+async function main() {
+  const r = runner();
 
-function defineTargets() {
-  const pageLayoutTarget = TextFileInputTarget.from("/layouts/page.html");
+  const publicDirs = ["public"];
 
-  const pagePreviewTargets: Record<string, PagePreviewTarget> = {};
+  const {
+    buildFiles,
+    findFiles,
+    copyFile,
+    readTextFile,
+    writeTextFile,
+    watchFiles,
+  } = filesystemMacro(r, {
+    projectRoot,
+    readPathPrefixes: [
+      "images",
+      "layouts",
+      "pages",
+      "node_modules/katex/dist",
+      "static",
+      "styles",
+    ],
+    writePathPrefixes: publicDirs,
+    watchPathPrefixes: ["src"],
+  });
 
-  for (const inputPath of findFiles("/pages")) {
-    const pagePreviewTarget = new PagePreviewTarget({
-      content: new MarkdownTarget(TextFileInputTarget.from(inputPath)),
-      layout: pageLayoutTarget,
-    });
+  const layoutHtml = readTextFile("layouts/page.html");
 
-    const outputPath = inputPath
-      .replace(/^[/]pages/, "/public-preview")
-      .replace(/[.]md$/, ".html");
-
-    new FileOutputTarget(outputPath, pagePreviewTarget);
-
-    const pagePath = outputPath
-      .replace(/^[/][^/]+/, "")
-      .replace(/[.]html$/, "")
-      .replace(/[/]index$/, "")
-      .replace(/^$/, "/");
-
-    pagePreviewTargets[pagePath] = pagePreviewTarget;
-
-    // For now, the final page looks the same as the preview. This will
-    // eventually depend on SiteAnalysisTarget.
-    new FileOutputTarget(
-      outputPath.replace(/^[/][^/]+/, "/public"),
-      pagePreviewTarget,
+  for (const src of findFiles("pages")) {
+    const pageContent = preprocessPageContentRule(
+      `PreprocessPageContent:${src}`,
+      markdownRule(`Markdown:${src}`, readTextFile(src)),
     );
+
+    for (const publicDir of publicDirs) {
+      const dest = src.replace(/^pages/, publicDir).replace(/[.]md$/, ".html");
+      writeTextFile(
+        dest,
+        applyPageLayoutRule(`ApplyPageLayout:${src}`, {
+          layoutHtml,
+          pageContent,
+        }),
+      );
+    }
   }
 
-  new SiteAnalysisTarget(new RecordTarget(pagePreviewTargets));
+  for (const src of findFiles("/styles")) {
+    const css = sassRule(`Sass:${src}`, readTextFile(src));
+    for (const publicDir of publicDirs) {
+      const dest = path.join(
+        publicDir,
+        "assets",
+        src.replace(/[.]scss$/, ".css"),
+      );
+      writeTextFile(dest, css);
+    }
+  }
 
   for (const publicDir of publicDirs) {
-    for (const inputPath of findFiles("/static")) {
-      const outputPath = inputPath.replace(/^[/]static/, publicDir);
-      new FileCopyTarget(inputPath, outputPath);
+    for (const src of findFiles("static")) {
+      const dest = src.replace(/^static/, publicDir);
+      copyFile(src, dest);
     }
 
-    new FileCopyTarget(
+    copyFile(
       "/node_modules/katex/dist/katex.min.css",
       publicDir + "/assets/katex/katex.min.css",
     );
 
-    for (const inputPath of findFiles("/node_modules/katex/dist/fonts")) {
-      const outputPath =
-        publicDir + "/assets/katex/fonts/" + path.basename(inputPath);
-      new FileCopyTarget(inputPath, outputPath);
-    }
-  }
-
-  for (const inputPath of findFiles("/styles")) {
-    const sassTarget = new SassTarget(TextFileInputTarget.from(inputPath));
-    for (const publicDir of publicDirs) {
-      const outputPath =
-        publicDir + "/assets" + inputPath.replace(/\.scss$/, ".css");
-      new FileOutputTarget(outputPath, sassTarget);
-    }
-  }
-
-  for (const target of Target.instancesByKey.values()) {
-    let path: string;
-    if (target instanceof FileInputTarget) {
-      path = target.projectPath;
-    } else if (target instanceof FileCopyTarget) {
-      path = target.srcProjectPath;
-    } else {
-      continue;
-    }
-
-    if (!pathsToWatch.some((prefix) => path.startsWith(prefix))) {
-      throw new Error(
-        `Path is read but not watched for incremental build: ${path}`,
+    for (const src of findFiles("node_modules/katex/dist/fonts")) {
+      const dest = path.join(
+        publicDir,
+        "assets/katex/fonts",
+        path.basename(src),
       );
+      copyFile(src, dest);
+    }
+
+    for (const src of findFiles("images")) {
+      const dest = path.join(publicDir, "assets", src);
+      copyFile(src, dest);
     }
   }
-}
 
-async function runBuild(watch: boolean) {
-  const leafTargets = Array.from(Target.instancesByKey.values()).filter(
-    (t) => t.dependents.size === 0,
-  );
+  {
+    let building = 0;
+    let startTimestampMs = 0;
 
-  await rebuildTargets(leafTargets);
-  if (!watch) {
-    return;
-  }
+    const emptyStats = () => ({
+      ok: 0,
+      warned: 0,
+      failed: 0,
+      skipped: 0,
+    });
+    let stats = emptyStats();
 
-  for await (const batch of chokidarEventStream(pathsToWatch)) {
-    for (const event of batch) {
-      if (event.eventName !== "change" || event.path.startsWith("/src")) {
-        console.log(
-          "Filesystem event not supported by incremental build:",
-          event,
-        );
-        return;
+    r.on("all", (e) => {
+      switch (e.type) {
+        case "targetResetEnd": {
+          if (e.result.status !== "ok") {
+            console.log(`Reset ${e.result.status}: ${e.target.id}`);
+            console.log(e.result.logs.replaceAll(/^/gm, "\t"));
+          }
+          break;
+        }
+        case "targetBuildStart": {
+          if (building === 0) {
+            startTimestampMs = e.timestampMs;
+          }
+          building++;
+          break;
+        }
+        case "targetBuildEnd": {
+          if (!e.cached && !e.obsolete) {
+            if (e.result.status !== "ok") {
+              console.log(`Build ${e.result.status}: ${e.target.id}`);
+              if (e.result.status !== "skipped") {
+                console.log(e.result.logs.replaceAll(/^/gm, "\t"));
+              }
+            }
+          }
+
+          building--;
+          stats[e.result.status]++;
+
+          if (building === 0) {
+            const summary = Object.entries(stats)
+              .filter(([_, count]) => count > 0)
+              .map(([status, count]) => `${count} ${status}`)
+              .join(", ");
+            const elapsedMs = e.timestampMs - startTimestampMs;
+            console.log(`${summary} in ${elapsedMs} ms`);
+
+            stats = emptyStats();
+          }
+          break;
+        }
+        default:
+          break;
       }
-      console.log(`Changed: ${event.path}`);
-      BinaryFileInputTarget.instancesByPath.get(event.path)?.markStale();
-      TextFileInputTarget.instancesByPath.get(event.path)?.markStale();
-    }
-    await rebuildTargets(leafTargets);
+    });
   }
-}
-
-async function rebuildTargets(targets: Target[]): Promise<void> {
-  const startTimeMs = Date.now();
-  for (const target of targets) {
-    await target.get();
-  }
-  const endTimeMs = Date.now();
-  console.log(`Build completed in ${endTimeMs - startTimeMs} ms.\n`);
-}
-
-async function main() {
-  console.log("Starting build daemon.");
-  defineTargets();
 
   const watch = process.argv[2] === "--watch";
-  await runBuild(watch);
-
-  const allOk = Array.from(Target.instancesByKey.values()).every(
-    (t) => t.status === "ok",
-  );
-  process.exit(allOk ? 0 : 1);
+  if (watch) {
+    await watchFiles();
+  } else {
+    await buildFiles();
+  }
 }
 
 await main();
