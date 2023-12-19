@@ -20,6 +20,7 @@ async function main() {
     filesystemMacro(r, {
       projectRoot,
       readPathPrefixes: [
+        "images",
         "layouts",
         "pages",
         "node_modules/katex/dist",
@@ -79,6 +80,11 @@ async function main() {
         "assets/katex/fonts",
         path.basename(src),
       );
+      copyFile(src, dest);
+    }
+
+    for (const src of findFiles("images")) {
+      const dest = path.join(publicDir, "assets", src);
       copyFile(src, dest);
     }
   }

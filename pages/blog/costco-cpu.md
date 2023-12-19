@@ -6,7 +6,7 @@
 
 ## Fetch
 
-Generally, a processor's instructions are stored in memory, so it needs to _fetch_ the instructions from memory before executing them. In many modern high-performance processors, instructions are fetched into a _reorder buffer_ (ROB), which keeps track of hundreds of instructions until they finish. Costco Wholesale is no exception:
+Generally, a processor's instructions are stored in memory, so it needs to _fetch_ the instructions from memory before executing them. In many high-performance processors, instructions are fetched into a _reorder buffer_ (ROB), which keeps track of hundreds of instructions until they finish. Costco Wholesale is no exception:
 
 <figure>
 

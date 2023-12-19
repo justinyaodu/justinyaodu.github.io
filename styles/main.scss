@@ -248,6 +248,18 @@ $main-max-width-factor: 42;
     .warning {
       background: #fea;
     }
+
+    figure {
+      img {
+        border: 1px solid #888;
+        width: 100%;
+      }
+
+      figcaption {
+        font-weight: 300;
+        text-align: center;
+      }
+    }
   }
 }
 

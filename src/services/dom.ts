@@ -67,6 +67,24 @@ const preprocessPageContentService = defineService<string, PageContent>({
       }
     }
 
+    for (const img of document.querySelectorAll("img")) {
+      const prefix = "/images";
+      const src = img.src;
+      if (src.startsWith(prefix)) {
+        img.src = src.replace(prefix, "/assets/images");
+      } else {
+        warn(
+          `Image src ${JSON.stringify(
+            src,
+          )} does not start with ${JSON.stringify(prefix)}`,
+        );
+      }
+    }
+
+    for (const img of document.querySelectorAll("figure > p > img")) {
+      img.parentElement!.replaceWith(img);
+    }
+
     for (const a of document.querySelectorAll("a")) {
       a.classList.add("link");
 
