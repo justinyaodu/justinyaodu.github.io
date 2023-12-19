@@ -1,10 +1,12 @@
 import { deleteFileSync, writeFile } from "../util/filesystem.js";
 
-import { Target, type TargetBuildArgs } from "./Target.js";
+import { Target } from "./Target.js";
+
+import type { TargetBuildArgs } from "./Target.js";
 
 type FileOutputTargetInputs = { data: Buffer | string };
 class FileOutputTarget extends Target<FileOutputTargetInputs, undefined> {
-  static instancesByPath: Map<string, FileOutputTarget> = new Map();
+  static instancesByPath = new Map<string, FileOutputTarget>();
 
   constructor(
     public projectPath: string,

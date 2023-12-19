@@ -1,6 +1,8 @@
 import { compileString } from "sass";
 
-import { PureTarget, Target, type TargetBuildArgs } from "./Target.js";
+import { PureTarget } from "./Target.js";
+
+import type { Target, TargetBuildArgs } from "./Target.js";
 
 type SassTargetInputs = { source: string };
 class SassTarget extends PureTarget<SassTargetInputs, string> {

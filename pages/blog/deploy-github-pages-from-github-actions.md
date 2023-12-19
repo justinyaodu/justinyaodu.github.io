@@ -1,5 +1,9 @@
 # Deploy to GitHub Pages from GitHub Actions, the easy way
 
+```json
+{ "date": "2023-09-24" }
+```
+
 If you use [GitHub Actions](https://docs.github.com/en/actions) to build your static website, you can deploy it to [GitHub Pages](https://pages.github.com) in 10 lines of code. No extra dependencies or access tokens needed!
 
 ## Push static files to the `gh-pages` branch

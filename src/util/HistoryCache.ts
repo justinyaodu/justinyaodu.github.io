@@ -1,11 +1,11 @@
 import { getOrSetComputed } from "./map.js";
 
 class HistoryCache<K extends number | string, V> {
-  private cache: Map<K, V>;
-  private refCounts: Map<K, number>;
+  private readonly cache: Map<K, V>;
+  private readonly refCounts: Map<K, number>;
   private time: number;
   private history: (K | undefined)[];
-  private historyMask: number;
+  private readonly historyMask: number;
 
   constructor(logHistorySize: number) {
     this.cache = new Map();
