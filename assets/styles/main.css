@@ -1,0 +1,456 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+}
+
+* {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+}
+
+ol,
+ul {
+  list-style: none;
+}
+
+strong {
+  font-weight: 700;
+}
+
+em {
+  font-style: italic;
+}
+
+:root {
+  background: #fff;
+  color: #000;
+  font-family: "Montserrat", sans-serif;
+  font-weight: 400;
+  line-height: 2;
+}
+
+body {
+  font-size: 1.25rem;
+}
+
+main {
+  max-width: 52.5rem;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+main > * + * {
+  margin-top: 1.875rem;
+}
+main a {
+  border-radius: 0.25em;
+  margin: -0.125em -0.125em;
+  padding: 0.125em 0.125em;
+}
+main a.link {
+  color: #24f;
+  text-decoration: underline;
+}
+main a.link:hover {
+  background-color: #ddf;
+}
+main a.link:hover * {
+  background-color: inherit;
+}
+main a.link:active {
+  background-color: #bbf;
+}
+main a.link:active * {
+  background-color: inherit;
+}
+main a.link:visited {
+  color: #80f;
+}
+main a.link:visited:hover {
+  background-color: #edf;
+}
+main a.link:visited:hover * {
+  background-color: inherit;
+}
+main a.link:visited:active {
+  background-color: #dbf;
+}
+main a.link:visited:active * {
+  background-color: inherit;
+}
+main header > * + *,
+main ul > * + *,
+main ol > * + *,
+main li > * + * {
+  margin-top: 0.625rem;
+}
+main ul,
+main ol {
+  margin-left: 1.25rem;
+}
+main ul > li,
+main ol > li {
+  margin-left: 1.5em;
+}
+main ul {
+  list-style: disc;
+}
+main ul ul {
+  list-style: circle;
+}
+main ol {
+  list-style: decimal;
+}
+main ol ol {
+  list-style: lower-alpha;
+}
+main header {
+  font-weight: 300;
+}
+main h1,
+main h2,
+main h3,
+main h4,
+main h5,
+main h6 {
+  line-height: 1.25;
+  font-weight: 300;
+}
+main h1 code,
+main h2 code,
+main h3 code,
+main h4 code,
+main h5 code,
+main h6 code {
+  font-weight: 300;
+}
+main h1 > a,
+main h2 > a,
+main h3 > a,
+main h4 > a,
+main h5 > a,
+main h6 > a {
+  color: inherit;
+}
+@media (hover: hover) {
+  main h1 > a,
+  main h2 > a,
+  main h3 > a,
+  main h4 > a,
+  main h5 > a,
+  main h6 > a {
+    text-decoration: none;
+  }
+}
+main h1 > a:hover,
+main h2 > a:hover,
+main h3 > a:hover,
+main h4 > a:hover,
+main h5 > a:hover,
+main h6 > a:hover {
+  text-decoration: underline;
+}
+main h1 > a:active,
+main h2 > a:active,
+main h3 > a:active,
+main h4 > a:active,
+main h5 > a:active,
+main h6 > a:active {
+  background-color: #eee;
+}
+main h2,
+main h3,
+main h4,
+main h5,
+main h6 {
+  padding-top: 0.5em;
+}
+main h1 {
+  font-size: 2.5em;
+}
+main h2 {
+  font-size: 2em;
+}
+main h3 {
+  font-size: 1.6em;
+}
+main h4 {
+  font-size: 1.28em;
+}
+main h5 {
+  font-size: 1em;
+}
+main h6 {
+  font-size: 0.8em;
+}
+main code {
+  border: 1px solid #ddd;
+  border-radius: 0.5em;
+  margin: -0.125em 0;
+  padding: 0.125em 0.25em;
+  background: #fefaf1;
+  font-family: "Source Code Pro", monospace;
+  font-weight: 400;
+}
+main aside,
+main pre {
+  border: 1px solid #ddd;
+  border-radius: 1.25rem;
+  margin-left: -1.25rem;
+  margin-right: -1.25rem;
+  padding: 1.25rem;
+}
+@media (max-width: 52.5rem) {
+  main aside,
+  main pre {
+    border-radius: 0;
+  }
+}
+main pre {
+  background: #fefaf1;
+  font-size: 0.8em;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+main pre code {
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+  background: none;
+  font-weight: 600;
+}
+main .info {
+  background: #def;
+}
+main .warning {
+  background: #fea;
+}
+main figure img {
+  border: 1px solid #888;
+  width: 100%;
+}
+main figure figcaption {
+  font-weight: 300;
+  text-align: center;
+}
+
+@media (max-width: 52.5rem) {
+  :root {
+    background: #fff;
+    color: #000;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 400;
+    line-height: 2;
+  }
+  body {
+    font-size: 1rem;
+  }
+  main {
+    max-width: 42rem;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+  main > * + * {
+    margin-top: 1.5rem;
+  }
+  main a {
+    border-radius: 0.25em;
+    margin: -0.125em -0.125em;
+    padding: 0.125em 0.125em;
+  }
+  main a.link {
+    color: #24f;
+    text-decoration: underline;
+  }
+  main a.link:hover {
+    background-color: #ddf;
+  }
+  main a.link:hover * {
+    background-color: inherit;
+  }
+  main a.link:active {
+    background-color: #bbf;
+  }
+  main a.link:active * {
+    background-color: inherit;
+  }
+  main a.link:visited {
+    color: #80f;
+  }
+  main a.link:visited:hover {
+    background-color: #edf;
+  }
+  main a.link:visited:hover * {
+    background-color: inherit;
+  }
+  main a.link:visited:active {
+    background-color: #dbf;
+  }
+  main a.link:visited:active * {
+    background-color: inherit;
+  }
+  main header > * + *,
+  main ul > * + *,
+  main ol > * + *,
+  main li > * + * {
+    margin-top: 0.5rem;
+  }
+  main ul,
+  main ol {
+    margin-left: 1rem;
+  }
+  main ul > li,
+  main ol > li {
+    margin-left: 1.5em;
+  }
+  main ul {
+    list-style: disc;
+  }
+  main ul ul {
+    list-style: circle;
+  }
+  main ol {
+    list-style: decimal;
+  }
+  main ol ol {
+    list-style: lower-alpha;
+  }
+  main header {
+    font-weight: 300;
+  }
+  main h1,
+  main h2,
+  main h3,
+  main h4,
+  main h5,
+  main h6 {
+    line-height: 1.25;
+    font-weight: 300;
+  }
+  main h1 code,
+  main h2 code,
+  main h3 code,
+  main h4 code,
+  main h5 code,
+  main h6 code {
+    font-weight: 300;
+  }
+  main h1 > a,
+  main h2 > a,
+  main h3 > a,
+  main h4 > a,
+  main h5 > a,
+  main h6 > a {
+    color: inherit;
+  }
+}
+@media (max-width: 52.5rem) and (hover: hover) {
+  main h1 > a,
+  main h2 > a,
+  main h3 > a,
+  main h4 > a,
+  main h5 > a,
+  main h6 > a {
+    text-decoration: none;
+  }
+}
+@media (max-width: 52.5rem) {
+  main h1 > a:hover,
+  main h2 > a:hover,
+  main h3 > a:hover,
+  main h4 > a:hover,
+  main h5 > a:hover,
+  main h6 > a:hover {
+    text-decoration: underline;
+  }
+  main h1 > a:active,
+  main h2 > a:active,
+  main h3 > a:active,
+  main h4 > a:active,
+  main h5 > a:active,
+  main h6 > a:active {
+    background-color: #eee;
+  }
+  main h2,
+  main h3,
+  main h4,
+  main h5,
+  main h6 {
+    padding-top: 0.5em;
+  }
+  main h1 {
+    font-size: 2.5em;
+  }
+  main h2 {
+    font-size: 2em;
+  }
+  main h3 {
+    font-size: 1.6em;
+  }
+  main h4 {
+    font-size: 1.28em;
+  }
+  main h5 {
+    font-size: 1em;
+  }
+  main h6 {
+    font-size: 0.8em;
+  }
+  main code {
+    border: 1px solid #ddd;
+    border-radius: 0.5em;
+    margin: -0.125em 0;
+    padding: 0.125em 0.25em;
+    background: #fefaf1;
+    font-family: "Source Code Pro", monospace;
+    font-weight: 400;
+  }
+  main aside,
+  main pre {
+    border: 1px solid #ddd;
+    border-radius: 1rem;
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding: 1rem;
+  }
+}
+@media (max-width: 52.5rem) and (max-width: 42rem) {
+  main aside,
+  main pre {
+    border-radius: 0;
+  }
+}
+@media (max-width: 52.5rem) {
+  main pre {
+    background: #fefaf1;
+    font-size: 0.8em;
+    line-height: 1.5;
+    overflow-x: auto;
+  }
+  main pre code {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    font-weight: 600;
+  }
+  main .info {
+    background: #def;
+  }
+  main .warning {
+    background: #fea;
+  }
+  main figure img {
+    border: 1px solid #888;
+    width: 100%;
+  }
+  main figure figcaption {
+    font-weight: 300;
+    text-align: center;
+  }
+}

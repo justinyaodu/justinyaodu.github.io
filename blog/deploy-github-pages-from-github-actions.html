@@ -1,0 +1,50 @@
+<!DOCTYPE html><html lang="en-us"><head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/assets/styles/main.css">
+    <link rel="stylesheet" href="/assets/katex/katex.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@300;500;600;700&amp;family=Montserrat:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&amp;display=block" rel="stylesheet">
+  <title>Deploy to GitHub Pages from GitHub Actions, the easy way</title></head>
+  <body>
+    <main><header><h1>Deploy to GitHub Pages from GitHub Actions, the easy way</h1><p><time datetime="2023-09-24">2023-09-24</time></p></header>
+
+<p>If you use <a href="https://docs.github.com/en/actions" class="link">GitHub Actions</a> to build your static website, you can deploy it to <a href="https://pages.github.com" class="link">GitHub Pages</a> in 10 lines of code. No extra dependencies or access tokens needed!</p>
+<h2 id="push-static-files-to-the-gh-pages-branch"><a href="#push-static-files-to-the-gh-pages-branch">Push static files to the <code>gh-pages</code> branch</a></h2>
+<p>Add this step to the end of your build job, replacing <code>public/</code> with the path to the newly built static files:</p>
+<pre tabindex="0"><code class="language-yml"><span class="line"><span style="color: #657B83">- </span><span style="color: #268BD2">name</span><span style="color: #657B83">: </span><span style="color: #2AA198">Push static files to gh-pages</span></span>
+<span class="line"><span style="color: #657B83">  </span><span style="color: #268BD2">run</span><span style="color: #657B83">: </span><span style="color: #859900">|</span></span>
+<span class="line"><span style="color: #2AA198">    cp -a .git public/</span></span>
+<span class="line"><span style="color: #2AA198">    cd public/</span></span>
+<span class="line"><span style="color: #2AA198">    git config user.name "github-actions[bot]"</span></span>
+<span class="line"><span style="color: #2AA198">    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"</span></span>
+<span class="line"><span style="color: #2AA198">    git checkout --orphan gh-pages</span></span>
+<span class="line"><span style="color: #2AA198">    git add .</span></span>
+<span class="line"><span style="color: #2AA198">    git commit -m "Deploy static website"</span></span>
+<span class="line"><span style="color: #2AA198">    git push -uf origin gh-pages</span></span>
+<span class="line"></span></code></pre>
+<aside class="warning">
+
+<p>If you already have a <code>gh-pages</code> branch, this will erase its history!</p>
+</aside>
+<p>An example of a complete workflow can be found <a href="https://github.com/justinyaodu/justinyaodu.github.io/blob/main/.github/workflows/build.yml" class="link">here</a> — this builds and deploys the website you’re reading right now.</p>
+<h3 id="how-it-works"><a href="#how-it-works">How it works</a></h3>
+<ol>
+<li><code>cp -a .git public/</code> copies the repository metadata into <code>public/</code>, including the configured remotes. This makes <code>public/</code> equivalent to a clone of your repository, where the working tree contains only your static files.</li>
+<li><code>git config</code> sets the username and email used to create the commit. This is required, but the actual values don’t matter (besides appearing in your repo’s commit history). I picked the username and email <a href="https://github.com/orgs/community/discussions/26560" class="link">used by the GitHub Actions bot</a>.</li>
+<li><code>git checkout --orphan gh-pages</code> switches to a new <code>gh-pages</code> branch with no history.</li>
+<li><code>git add</code> and <code>git commit</code> create a single commit with all of the static files.</li>
+<li><code>git push -uf origin gh-pages</code> force-pushes the single commit to the <code>gh-pages</code> branch on GitHub.</li>
+</ol>
+<p>This can probably be modified to preserve the <code>gh-pages</code> commit history, but I had no need for it personally.</p>
+<h2 id="configure-github-pages"><a href="#configure-github-pages">Configure GitHub Pages</a></h2>
+<p>Follow <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site#publishing-from-a-branch" class="link">these steps</a> to publish your static site from the root of the <code>gh-pages</code> branch. When your workflow runs and pushes new static files to <code>gh-pages</code>, your website will be redeployed automatically.</p>
+<aside class="info">
+
+<p>Also consider creating a <a href="https://github.blog/2009-12-29-bypassing-jekyll-on-github-pages/" class="link"><code>.nojekyll</code> file</a>; this speeds up your GitHub Pages deployments by skipping the Jekyll build which occurs by default. For example, you could add <code>touch .nojekyll</code> right before <code>git add .</code> in the commands above.</p>
+</aside>
+</main>
+  
+
+</body></html>
