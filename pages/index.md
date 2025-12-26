@@ -1,6 +1,6 @@
 # Justin Yao Du
 
-Hi there! I'm a computer science student and aspiring software engineer, among other things.
+Hi there! I'm a software engineer, among other things.
 
 ## Contact
 
